@@ -1,0 +1,412 @@
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Particle, Translation } from '../types';
+import { MousePointer2, Lock, Unlock, Hand, Rotate3d, Maximize } from 'lucide-react';
+
+interface SimulationCanvasProps {
+  particles: Particle[];
+  L: number;
+  r: number;
+  isRunning: boolean;
+  t: Translation;
+  isFocused: boolean;
+  onFocusChange: (focused: boolean) => void;
+  showNotification: (text: string, duration?: number) => void;
+}
+
+const SimulationCanvas: React.FC<SimulationCanvasProps> = ({ 
+    particles, L, r, isRunning, t, 
+    isFocused, onFocusChange, showNotification 
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Camera State
+  const [rotation, setRotation] = useState({ x: -15, y: 30 }); // Degrees
+  const [scale, setScale] = useState(1.0);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  
+  // Interaction State
+  const [isPanMode, setIsPanMode] = useState(false); 
+  
+  // Mouse Refs
+  const isDragging = useRef(false);
+  const lastMousePos = useRef({ x: 0, y: 0 });
+  const dragStartTime = useRef(0);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+
+  // Touch Refs (For Pinch Zoom)
+  const lastTouchDist = useRef<number | null>(null);
+  const lastTouchCenter = useRef<{x: number, y: number} | null>(null);
+
+  // Reset Pan mode when focus is lost
+  useEffect(() => {
+    if (!isFocused) setIsPanMode(false);
+  }, [isFocused]);
+
+  // Toggle Focus Logic
+  const toggleFocus = () => {
+    const newState = !isFocused;
+    onFocusChange(newState);
+    if (newState) {
+        showNotification(t.canvas.locked);
+    } else {
+        showNotification(t.canvas.unlocked);
+    }
+  };
+
+  const togglePanMode = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation(); 
+    setIsPanMode(!isPanMode);
+  };
+
+  // 3D Projection Helpers
+  const project = (x: number, y: number, z: number, logicalWidth: number, logicalHeight: number) => {
+    let px = x - L / 2;
+    let py = y - L / 2;
+    let pz = z - L / 2;
+
+    const radY = (rotation.y * Math.PI) / 180;
+    const radX = (rotation.x * Math.PI) / 180;
+
+    let x1 = px * Math.cos(radY) - pz * Math.sin(radY);
+    let z1 = px * Math.sin(radY) + pz * Math.cos(radY);
+    
+    let y1 = py * Math.cos(radX) - z1 * Math.sin(radX);
+    let z2 = py * Math.sin(radX) + z1 * Math.cos(radX);
+
+    const fov = 800; 
+    // Auto-fit Logic: 
+    // The diagonal of the cube is L * sqrt(3) ≈ 1.732 * L.
+    // To fit this rotating cube inside the smallest dimension of the canvas (min(w,h)),
+    // the scale factor should be roughly min(w,h) / (1.732 * L).
+    // We use 1.9 to add a slight padding (approx 5-10% margin).
+    const baseScale = Math.min(logicalWidth, logicalHeight) / (L * 1.9); 
+    
+    const perspective = fov / (fov + z2);
+    
+    const screenX = logicalWidth / 2 + x1 * baseScale * scale * perspective + pan.x;
+    const screenY = logicalHeight / 2 + y1 * baseScale * scale * perspective + pan.y;
+    
+    return { x: screenX, y: screenY, depth: z2, scale: perspective * scale * baseScale };
+  };
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const width = canvas.width / dpr;
+    const height = canvas.height / dpr;
+
+    ctx.clearRect(0, 0, width, height);
+    
+    const vertices = [
+      [0, 0, 0], [L, 0, 0], [L, L, 0], [0, L, 0],
+      [0, 0, L], [L, 0, L], [L, L, L], [0, L, L]
+    ];
+    
+    const projectedVertices = vertices.map(v => project(v[0], v[1], v[2], width, height));
+
+    ctx.strokeStyle = '#94a3b8'; 
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    
+    const edges = [
+      [0,1], [1,2], [2,3], [3,0], 
+      [4,5], [5,6], [6,7], [7,4], 
+      [0,4], [1,5], [2,6], [3,7]  
+    ];
+
+    ctx.beginPath();
+    edges.forEach(([i, j]) => {
+      ctx.moveTo(projectedVertices[i].x, projectedVertices[i].y);
+      ctx.lineTo(projectedVertices[j].x, projectedVertices[j].y);
+    });
+    ctx.stroke();
+
+    const projectedParticles = particles.map(p => {
+        const proj = project(p.x, p.y, p.z, width, height);
+        return { ...p, ...proj };
+    }).sort((a, b) => b.depth - a.depth);
+
+    projectedParticles.forEach(p => {
+      ctx.beginPath();
+      const radius = Math.max(1, r * p.scale);
+      
+      ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+      
+      const grad = ctx.createRadialGradient(p.x - radius/3, p.y - radius/3, radius/5, p.x, p.y, radius);
+      grad.addColorStop(0, `rgba(224, 242, 254, 0.9)`); 
+      grad.addColorStop(1, `rgba(14, 165, 233, 0.9)`); 
+
+      ctx.fillStyle = grad;
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.arc(p.x - radius/3, p.y - radius/3, radius/4, 0, 2 * Math.PI);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fill();
+      
+      ctx.strokeStyle = 'rgba(12, 74, 110, 0.3)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    });
+
+  }, [particles, rotation, scale, pan, L, r]);
+
+  // Render Loop
+  useEffect(() => {
+    let animationFrameId: number;
+    const render = () => {
+      draw();
+      animationFrameId = requestAnimationFrame(render);
+    };
+    render();
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [draw]);
+
+  // --- MOUSE & WHEEL EVENTS (Desktop) ---
+  useEffect(() => {
+    const handleGlobalWheel = (e: WheelEvent) => {
+      if (!isFocused) return;
+      const container = containerRef.current;
+      const isOverCanvas = container && container.contains(e.target as Node);
+
+      if (isOverCanvas) {
+         e.preventDefault(); 
+         e.stopPropagation();
+         const zoomSensitivity = 0.001;
+         const zoomFactor = -e.deltaY * zoomSensitivity * 0.5;
+         setScale(prev => Math.max(0.2, Math.min(5, prev + zoomFactor)));
+      } else {
+         e.preventDefault();
+         showNotification(t.canvas.scrollWarning);
+      }
+    };
+    window.addEventListener('wheel', handleGlobalWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleGlobalWheel);
+  }, [isFocused, t.canvas.scrollWarning, showNotification]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isFocused) { toggleFocus(); return; }
+    isDragging.current = true;
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+    dragStartTime.current = Date.now();
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isFocused || !isDragging.current) return;
+    const dx = e.clientX - lastMousePos.current.x;
+    const dy = e.clientY - lastMousePos.current.y;
+    if (isPanMode || e.buttons === 2) { // Right click also pans
+        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+    } else {
+        setRotation(prev => ({ x: prev.x + dy * 0.5, y: prev.y + dx * 0.5 }));
+    }
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    const dragDuration = Date.now() - dragStartTime.current;
+    const moveDist = Math.hypot(e.clientX - dragStartPos.current.x, e.clientY - dragStartPos.current.y);
+    if (isFocused && dragDuration < 200 && moveDist < 5) {
+        toggleFocus(); // Short click unlocks
+    }
+  };
+
+  // --- TOUCH EVENTS (Mobile - Pinch to Zoom & Touch Drag) ---
+  const handleTouchStart = (e: React.TouchEvent) => {
+     // If 2 fingers, it's a pinch/pan intent, allow immediate interaction even if not focused
+     if (e.touches.length === 2) {
+        if (!isFocused) onFocusChange(true);
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        lastTouchDist.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        lastTouchCenter.current = {
+            x: (t1.clientX + t2.clientX) / 2,
+            y: (t1.clientY + t2.clientY) / 2
+        };
+     } else if (e.touches.length === 1) {
+         if (!isFocused) {
+             // Tap to focus will be handled by onClick/MouseUp simulation or simple toggle
+             // But we set drag start to detect "Tap" vs "Scroll"
+         }
+         const t = e.touches[0];
+         lastMousePos.current = { x: t.clientX, y: t.clientY };
+         isDragging.current = true;
+     }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+      // Prevent default page scroll ONLY if focused
+      if (isFocused) {
+          // If moving vertically significantly, we might want to allow scroll IF not dragging?
+          // But for 3D, it's better to block scroll completely when focused.
+          // e.preventDefault(); // React synthetic events cant always preventDefault in time for scroll
+          // We rely on CSS 'touch-action: none' or logic below.
+      }
+
+      if (e.touches.length === 2 && lastTouchDist.current !== null) {
+          // PINCH ZOOM
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          
+          const scaleFactor = currentDist / lastTouchDist.current;
+          setScale(prev => Math.max(0.2, Math.min(5, prev * scaleFactor))); // Multiplicative zoom
+
+          // Two finger Pan
+          if (lastTouchCenter.current) {
+              const currentCenter = {
+                  x: (t1.clientX + t2.clientX) / 2,
+                  y: (t1.clientY + t2.clientY) / 2
+              };
+              const dx = currentCenter.x - lastTouchCenter.current.x;
+              const dy = currentCenter.y - lastTouchCenter.current.y;
+              setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+              lastTouchCenter.current = currentCenter;
+          }
+
+          lastTouchDist.current = currentDist;
+
+      } else if (e.touches.length === 1 && isFocused && isDragging.current) {
+          // ONE FINGER ROTATE (or PAN if mode active)
+          const t = e.touches[0];
+          const dx = t.clientX - lastMousePos.current.x;
+          const dy = t.clientY - lastMousePos.current.y;
+
+          if (isPanMode) {
+              setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+          } else {
+              setRotation(prev => ({ x: prev.x + dy * 0.5, y: prev.y + dx * 0.5 }));
+          }
+          lastMousePos.current = { x: t.clientX, y: t.clientY };
+      }
+  };
+
+  const handleTouchEnd = () => {
+      lastTouchDist.current = null;
+      lastTouchCenter.current = null;
+      isDragging.current = false;
+  };
+
+  const resetView = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    setRotation({ x: -15, y: 30 });
+    setScale(1.0);
+    setPan({ x: 0, y: 0 }); 
+  };
+
+  // Resize Observer
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current && canvasRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvasRef.current.width = width * dpr;
+        canvasRef.current.height = height * dpr;
+        const ctx = canvasRef.current.getContext('2d');
+        ctx?.scale(dpr, dpr); 
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize(); 
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-2 relative">
+        {/* Interaction Hint (Top bar) */}
+        <div className="flex justify-between items-center px-1 text-[10px] text-sciblue-600 uppercase tracking-widest font-bold">
+            <span className="flex items-center gap-1">
+                {isFocused ? <Lock size={10}/> : <Unlock size={10}/>}
+                {isFocused ? t.canvas.locked.split('·')[0] : t.canvas.scrollEnabled}
+            </span>
+            <span>{isFocused ? t.canvas.clickToRelease : t.canvas.clickToInteract}</span>
+        </div>
+
+        <div 
+            ref={containerRef}
+            className={`
+                relative w-full h-[400px] rounded-lg overflow-hidden group bg-slate-900
+                transition-all duration-300 cubic-bezier(0.34, 1.56, 0.64, 1) touch-none select-none
+                ${isFocused 
+                    ? 'scale-[1.01] shadow-[0_0_0_4px_rgba(56,189,248,0.3)] ring-2 ring-sciblue-500 z-10' 
+                    : 'scale-100 shadow-inner border border-slate-700 hover:border-sciblue-400/50'
+                }
+                ${isDragging.current ? 'cursor-grabbing' : 'cursor-grab'}
+            `}
+            // Add touch listeners to container to catch them before canvas if needed, but canvas is fine
+        >
+            <canvas
+                ref={canvasRef}
+                className="w-full h-full block touch-none"
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={() => { isDragging.current = false; }}
+                onContextMenu={(e) => { e.preventDefault(); }} // Prevent context menu for right-click pan
+                
+                // Touch Events for Mobile
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+
+                style={{ width: '100%', height: '100%' }}
+            />
+            
+            {/* Overlay Controls */}
+            <div className={`absolute top-0 left-0 w-full p-4 flex justify-between pointer-events-none transition-opacity duration-300 ${isFocused || 'group-hover:opacity-100 opacity-0'}`}>
+                {/* Top Left: Hand/Pan Tool */}
+                <div className="pointer-events-auto">
+                    {isFocused && (
+                        <button
+                            onClick={togglePanMode}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()} // Stop propagation on touch
+                            className={`
+                                p-3 rounded-full shadow-xl border backdrop-blur-md transition-all active:scale-95 flex items-center justify-center
+                                ${isPanMode 
+                                    ? 'bg-sciblue-600 text-white border-sciblue-300 shadow-[0_0_20px_rgba(14,165,233,0.6)] scale-110' 
+                                    : 'bg-white/10 text-white border-white/20 hover:bg-white/20 hover:scale-105'
+                                }
+                            `}
+                            title={isPanMode ? "Pan Mode Active" : "Enable Pan Mode"}
+                        >
+                            {isPanMode ? <Hand size={22} strokeWidth={2.5} /> : <Rotate3d size={22} strokeWidth={2} />}
+                        </button>
+                    )}
+                </div>
+
+                {/* Top Right: Reset View */}
+                <div className="pointer-events-auto">
+                    <button 
+                        onClick={resetView}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        className="bg-sciblue-600 hover:bg-sciblue-500 text-white text-xs px-3 py-1.5 rounded-full shadow-lg border border-sciblue-400/50 backdrop-blur-sm transition-transform active:scale-95 flex items-center gap-1"
+                    >
+                        <Maximize size={12}/> {t.canvas.resetView}
+                    </button>
+                </div>
+            </div>
+
+            {/* Instructions Overlay */}
+            <div className="absolute bottom-4 left-4 pointer-events-none text-xs text-sciblue-100 select-none bg-black/60 backdrop-blur-sm px-2 py-1 rounded border border-white/10 shadow-lg">
+                {isFocused ? (
+                    <p className="font-medium">{t.canvas.instructionsFocused}</p>
+                ) : (
+                    <p className="flex items-center gap-2"><MousePointer2 size={12}/> {t.canvas.instructionsIdle}</p>
+                )}
+            </div>
+        </div>
+    </div>
+  );
+};
+
+export default SimulationCanvas;
