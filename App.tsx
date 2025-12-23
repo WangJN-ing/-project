@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Box, BarChart3, Settings2, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User } from 'lucide-react';
+import { Play, Pause, RotateCcw, Box, BarChart3, Settings2, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom } from 'lucide-react';
 import { PhysicsEngine } from './services/PhysicsEngine';
 import { SimulationParams, SimulationStats, ChartData, LanguageCode } from './types';
 import { translations } from './services/translations';
@@ -177,13 +177,10 @@ function App() {
       {/* HEADER LOGO (Top Left) */}
       <div className="absolute top-6 left-6 z-50 animate-fade-in-down group cursor-default">
          <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm pr-4 pl-2 py-1.5 rounded-full border border-white/40 shadow-sm hover:bg-white/80 transition-all">
-            {/* Real BJTU Logo from Wikimedia (SVG) */}
-            <img 
-               src="https://upload.wikimedia.org/wikipedia/commons/c/ca/Beijing_Jiaotong_University_Logo.svg"
-               alt="BJTU Logo" 
-               className="w-10 h-10 object-contain drop-shadow-sm group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500 ease-out"
-               onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-            />
+            {/* No Image File Dependency: Using Vector Icon */}
+            <div className="w-10 h-10 rounded-full bg-sciblue-50 flex items-center justify-center border border-sciblue-100 shadow-inner group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500 ease-out">
+                <Atom size={20} className="text-sciblue-600" />
+            </div>
             
             <div className="flex flex-col leading-none">
                <span className="text-[10px] font-extrabold text-sciblue-700 tracking-widest uppercase font-sans">BJTU</span>
@@ -212,7 +209,8 @@ function App() {
         className={`fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[100] pointer-events-none transition-all duration-500 ease-out ${notification.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
       >
         <div className="bg-slate-900/90 backdrop-blur-md text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-white/10 ring-1 ring-black/5">
-            {notification.text.includes(t.canvas.locked.split('·')[0]) ? <Lock size={18} className="text-sciblue-400"/> : 
+            {/* Show Lock icon if text includes "Locked" or "Active" (from Interaction Active), otherwise show Unlock or Pointer */}
+            {(notification.text.includes(t.canvas.locked.split('·')[0]) || notification.text.includes(t.canvas.scrollWarning.split('·')[0])) ? <Lock size={18} className="text-sciblue-400"/> : 
              notification.text.includes(t.canvas.unlocked.split('·')[0]) ? <Unlock size={18} className="text-slate-400"/> :
              <MousePointer2 size={18} className="text-amber-400"/>}
             <span className="font-medium tracking-wide text-sm">{notification.text}</span>

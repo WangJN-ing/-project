@@ -17,14 +17,11 @@ const Footer: React.FC<FooterProps> = ({ t }) => {
              BJTU Weihai 2025
           </div>
           
-          {/* Brand Logo & Title Area - Using Remote URL */}
+          {/* Brand Logo & Title Area - No Image File Dependency */}
           <div className="flex items-start gap-4">
-            <img 
-               src="https://upload.wikimedia.org/wikipedia/commons/c/ca/Beijing_Jiaotong_University_Logo.svg" 
-               alt="School Logo" 
-               className="w-12 h-12 object-contain brightness-0 invert opacity-90 mt-1"
-               onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-            />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-700 shadow-inner mt-1">
+                <GraduationCap size={24} className="text-sciblue-400" />
+            </div>
             <div>
                 <h2 className="text-2xl font-bold text-slate-100 tracking-tight leading-tight">{t.title}</h2>
                 <p className="text-sm leading-relaxed text-slate-400 mt-2 max-w-xs">
@@ -69,7 +66,7 @@ const Footer: React.FC<FooterProps> = ({ t }) => {
                    <div className="flex flex-col">
                        <span className="text-xs text-slate-400 uppercase font-bold tracking-wide mb-1">{t.footer.role_research}</span>
                        <p className="text-slate-300 leading-relaxed text-xs">
-                          申杰霖 (Shen Jielin), 季唐宇 (Ji Tangyu), <br/>
+                          申杰霖 (Shen Jielin), 季唐羽 (Ji Tangyu), <br/>
                           欧一帅 (Ou Yishuai), 张子航 (Zhang Zihang)
                        </p>
                    </div>

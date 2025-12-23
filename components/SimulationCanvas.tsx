@@ -43,7 +43,23 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     if (!isFocused) setIsPanMode(false);
   }, [isFocused]);
 
-  // Toggle Focus Logic
+  // Handle Click Outside to Exit Focus
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // If we are focused, and click happens OUTSIDE the container
+      if (isFocused && containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        // Just exit focus cleanly. No warning needed as this is the intended exit action.
+        onFocusChange(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isFocused, onFocusChange]);
+
+  // Toggle Focus Logic (Manual)
   const toggleFocus = () => {
     const newState = !isFocused;
     onFocusChange(newState);
@@ -75,11 +91,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     let z2 = py * Math.sin(radX) + z1 * Math.cos(radX);
 
     const fov = 800; 
-    // Auto-fit Logic: 
-    // The diagonal of the cube is L * sqrt(3) ≈ 1.732 * L.
-    // To fit this rotating cube inside the smallest dimension of the canvas (min(w,h)),
-    // the scale factor should be roughly min(w,h) / (1.732 * L).
-    // We use 1.9 to add a slight padding (approx 5-10% margin).
+    // Auto-fit Logic
     const baseScale = Math.min(logicalWidth, logicalHeight) / (L * 1.9); 
     
     const perspective = fov / (fov + z2);
@@ -170,24 +182,32 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   // --- MOUSE & WHEEL EVENTS (Desktop) ---
   useEffect(() => {
     const handleGlobalWheel = (e: WheelEvent) => {
+      // Only intervene if we are FOCUSED
       if (!isFocused) return;
+
+      // CRITICAL CHANGE: Always prevent default scroll when focused to lock the page
+      e.preventDefault(); 
+      e.stopPropagation();
+
       const container = containerRef.current;
       const isOverCanvas = container && container.contains(e.target as Node);
 
       if (isOverCanvas) {
-         e.preventDefault(); 
-         e.stopPropagation();
+         // If mouse is inside, perform Zoom
          const zoomSensitivity = 0.001;
          const zoomFactor = -e.deltaY * zoomSensitivity * 0.5;
          setScale(prev => Math.max(0.2, Math.min(5, prev + zoomFactor)));
       } else {
-         e.preventDefault();
+         // If mouse is outside but still focused, WARN the user.
+         // They are trying to scroll the page but it's locked.
          showNotification(t.canvas.scrollWarning);
       }
     };
+    
+    // Use passive: false to allow e.preventDefault()
     window.addEventListener('wheel', handleGlobalWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleGlobalWheel);
-  }, [isFocused, t.canvas.scrollWarning, showNotification]);
+  }, [isFocused, showNotification, t]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isFocused) { toggleFocus(); return; }
@@ -212,16 +232,10 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   const handleMouseUp = (e: React.MouseEvent) => {
     if (!isDragging.current) return;
     isDragging.current = false;
-    const dragDuration = Date.now() - dragStartTime.current;
-    const moveDist = Math.hypot(e.clientX - dragStartPos.current.x, e.clientY - dragStartPos.current.y);
-    if (isFocused && dragDuration < 200 && moveDist < 5) {
-        toggleFocus(); // Short click unlocks
-    }
   };
 
   // --- TOUCH EVENTS (Mobile - Pinch to Zoom & Touch Drag) ---
   const handleTouchStart = (e: React.TouchEvent) => {
-     // If 2 fingers, it's a pinch/pan intent, allow immediate interaction even if not focused
      if (e.touches.length === 2) {
         if (!isFocused) onFocusChange(true);
         const t1 = e.touches[0];
@@ -232,10 +246,6 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
             y: (t1.clientY + t2.clientY) / 2
         };
      } else if (e.touches.length === 1) {
-         if (!isFocused) {
-             // Tap to focus will be handled by onClick/MouseUp simulation or simple toggle
-             // But we set drag start to detect "Tap" vs "Scroll"
-         }
          const t = e.touches[0];
          lastMousePos.current = { x: t.clientX, y: t.clientY };
          isDragging.current = true;
@@ -243,12 +253,9 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-      // Prevent default page scroll ONLY if focused
       if (isFocused) {
-          // If moving vertically significantly, we might want to allow scroll IF not dragging?
-          // But for 3D, it's better to block scroll completely when focused.
-          // e.preventDefault(); // React synthetic events cant always preventDefault in time for scroll
-          // We rely on CSS 'touch-action: none' or logic below.
+          // Block mobile scroll if focused
+          // e.preventDefault(); // React synthetic events might not support this reliably in all cases, but 'touch-none' css helps
       }
 
       if (e.touches.length === 2 && lastTouchDist.current !== null) {
@@ -258,7 +265,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
           const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
           
           const scaleFactor = currentDist / lastTouchDist.current;
-          setScale(prev => Math.max(0.2, Math.min(5, prev * scaleFactor))); // Multiplicative zoom
+          setScale(prev => Math.max(0.2, Math.min(5, prev * scaleFactor))); 
 
           // Two finger Pan
           if (lastTouchCenter.current) {
@@ -341,7 +348,6 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
                 }
                 ${isDragging.current ? 'cursor-grabbing' : 'cursor-grab'}
             `}
-            // Add touch listeners to container to catch them before canvas if needed, but canvas is fine
         >
             <canvas
                 ref={canvasRef}
@@ -350,7 +356,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={() => { isDragging.current = false; }}
-                onContextMenu={(e) => { e.preventDefault(); }} // Prevent context menu for right-click pan
+                onContextMenu={(e) => { e.preventDefault(); }} 
                 
                 // Touch Events for Mobile
                 onTouchStart={handleTouchStart}
@@ -368,7 +374,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
                         <button
                             onClick={togglePanMode}
                             onMouseDown={(e) => e.stopPropagation()}
-                            onTouchStart={(e) => e.stopPropagation()} // Stop propagation on touch
+                            onTouchStart={(e) => e.stopPropagation()} 
                             className={`
                                 p-3 rounded-full shadow-xl border backdrop-blur-md transition-all active:scale-95 flex items-center justify-center
                                 ${isPanMode 
