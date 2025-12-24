@@ -334,7 +334,8 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
         <div 
             ref={containerRef}
             className={`
-                relative w-full h-[300px] md:h-[400px] rounded-lg overflow-hidden group bg-slate-900
+                relative w-full rounded-lg overflow-hidden group bg-slate-900
+                h-[380px] sm:h-[450px] md:h-[500px] lg:h-[550px]
                 transition-all duration-300 cubic-bezier(0.34, 1.56, 0.64, 1) touch-none select-none
                 ${isFocused 
                     ? 'scale-[1.01] shadow-[0_0_0_4px_rgba(56,189,248,0.3)] ring-2 ring-sciblue-500 z-10' 
@@ -357,7 +358,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
                 style={{ width: '100%', height: '100%' }}
             />
             
-            {/* BOTTOM GRADIENT MASK - Updated for better blending with bg-slate-900 */}
+            {/* BOTTOM GRADIENT MASK */}
             <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent pointer-events-none rounded-b-lg z-10" />
 
             {/* Overlay Controls */}
@@ -375,7 +376,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
                                     : 'bg-white/10 text-white border-white/20 hover:bg-white/20 hover:scale-105'
                                 }
                             `}
-                            title={isPanMode ? "Pan Mode Active" : "Enable Pan Mode"}
+                            title={isPanMode ? t.tooltips.rotateMode : t.tooltips.panMode}
                         >
                             {isPanMode ? <Hand size={22} strokeWidth={2.5} /> : <Rotate3d size={22} strokeWidth={2} />}
                         </button>
@@ -388,6 +389,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
                         onMouseDown={(e) => e.stopPropagation()}
                         onTouchStart={(e) => e.stopPropagation()}
                         className="bg-sciblue-600 hover:bg-sciblue-500 text-white text-xs px-3 py-1.5 rounded-full shadow-lg border border-sciblue-400/50 backdrop-blur-sm transition-transform active:scale-95 flex items-center gap-1"
+                        title={t.tooltips.resetCamera}
                     >
                         <Maximize size={12}/> {t.canvas.resetView}
                     </button>

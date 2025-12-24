@@ -4,6 +4,9 @@ export const translations: Record<LanguageCode, Translation> = {
   'zh-CN': {
     title: "硬球模型气体仿真",
     subtitle: "基于安德森热浴的分子动力学验证平台",
+    header: {
+      systemOp: "系统正常运行",
+    },
     controls: {
       title: "参数设置",
       particles: "粒子数量 (N)",
@@ -76,8 +79,19 @@ export const translations: Record<LanguageCode, Translation> = {
       foldingLocked: "请先退出交互模式，再折叠卡片",
       runningLocked: "模拟运行中无法折叠，请先暂停",
     },
+    tooltips: {
+      openSidebar: "展开设置面板",
+      closeSidebar: "收起设置面板",
+      panMode: "平移模式",
+      rotateMode: "旋转模式",
+      resetCamera: "重置相机视角",
+      togglePan: "切换平移/旋转",
+    },
     common: {
       expandDetails: "展开参数设置",
+      expandView: "展开视图设置",
+      expandCharts: "展开图表设置",
+      expandResults: "展开结果分析",
       prev: "上一张",
       next: "下一张",
       expandAll: "全屏平铺显示",
@@ -97,6 +111,8 @@ export const translations: Record<LanguageCode, Translation> = {
       github: "GitHub 仓库",
       report: "查看报告 (PDF)",
       contact: "联系组长",
+      copied: "已复制！",
+      emailCopiedMsg: "联系邮箱已复制到剪贴板",
       acknowledgement: "特别致谢 AI 助手 Google Gemini 与 OpenAI ChatGPT 提供开发支持",
       designedBy: "网页设计与开发: 王骏宁",
       role_leader: "组长 / 网页 & 算法设计",
@@ -107,6 +123,9 @@ export const translations: Record<LanguageCode, Translation> = {
   'zh-TW': {
     title: "硬球模型氣體模擬",
     subtitle: "基於安德森熱浴的分子動力學驗證平台",
+    header: {
+      systemOp: "系統正常運行",
+    },
     controls: {
       title: "參數設置",
       particles: "粒子數量 (N)",
@@ -179,8 +198,19 @@ export const translations: Record<LanguageCode, Translation> = {
       foldingLocked: "請先退出交互模式，再折疊卡片",
       runningLocked: "模擬運行中無法折疊，請先暫停",
     },
+    tooltips: {
+      openSidebar: "展開設置面板",
+      closeSidebar: "收起設置面板",
+      panMode: "平移模式",
+      rotateMode: "旋轉模式",
+      resetCamera: "重置相機視角",
+      togglePan: "切換平移/旋轉",
+    },
     common: {
       expandDetails: "展開參數設置",
+      expandView: "展開視圖設置",
+      expandCharts: "展開圖表設置",
+      expandResults: "展開結果分析",
       prev: "上一張",
       next: "下一張",
       expandAll: "全屏平鋪顯示",
@@ -200,7 +230,9 @@ export const translations: Record<LanguageCode, Translation> = {
       github: "GitHub 倉庫",
       report: "查看報告 (PDF)",
       contact: "聯繫組長",
-      acknowledgement: "特別致謝 AI 助手 Google Gemini 與 OpenAI ChatGPT 提供開發支持",
+      copied: "已複製！",
+      emailCopiedMsg: "聯繫郵箱已複製到剪貼簿",
+      acknowledgement: "特別致谢 AI 助手 Google Gemini 與 OpenAI ChatGPT 提供開發支持",
       designedBy: "網頁設計與開發: 王駿寧",
       role_leader: "組長 / 網頁 & 算法設計",
       role_algo: "Matlab 演算法協助",
@@ -210,6 +242,9 @@ export const translations: Record<LanguageCode, Translation> = {
   'en-GB': {
     title: "Hard Sphere Simulation",
     subtitle: "Molecular Dynamics Verification with Andersen Thermostat",
+    header: {
+      systemOp: "System Operational",
+    },
     controls: {
       title: "Parameters",
       particles: "Particles (N)",
@@ -282,8 +317,19 @@ export const translations: Record<LanguageCode, Translation> = {
       foldingLocked: "Exit interaction mode before collapsing",
       runningLocked: "Cannot collapse while running. Please pause first.",
     },
+    tooltips: {
+      openSidebar: "Open Settings Panel",
+      closeSidebar: "Close Settings Panel",
+      panMode: "Pan Mode",
+      rotateMode: "Rotate Mode",
+      resetCamera: "Reset Camera View",
+      togglePan: "Toggle Pan/Rotate",
+    },
     common: {
       expandDetails: "Show Parameters",
+      expandView: "View Settings",
+      expandCharts: "Chart Settings",
+      expandResults: "Result Analysis",
       prev: "Previous",
       next: "Next",
       expandAll: "Grid View",
@@ -303,6 +349,8 @@ export const translations: Record<LanguageCode, Translation> = {
       github: "GitHub Repo",
       report: "View Report (PDF)",
       contact: "Contact Leader",
+      copied: "Copied!",
+      emailCopiedMsg: "Email address copied to clipboard",
       acknowledgement: "Special thanks to AI assistants Google Gemini & OpenAI ChatGPT for development support.",
       designedBy: "Designed by Wang Junning",
       role_leader: "Leader / Web & Algo Design",
@@ -313,6 +361,9 @@ export const translations: Record<LanguageCode, Translation> = {
   'en-US': {
     title: "Hard Sphere Simulation",
     subtitle: "Molecular Dynamics Verification with Andersen Thermostat",
+    header: {
+      systemOp: "System Operational",
+    },
     controls: {
       title: "Parameters",
       particles: "Particles (N)",
@@ -385,8 +436,19 @@ export const translations: Record<LanguageCode, Translation> = {
       foldingLocked: "Exit interaction mode before collapsing",
       runningLocked: "Cannot collapse while running. Please pause first.",
     },
+    tooltips: {
+      openSidebar: "Open Settings Panel",
+      closeSidebar: "Close Settings Panel",
+      panMode: "Pan Mode",
+      rotateMode: "Rotate Mode",
+      resetCamera: "Reset Camera View",
+      togglePan: "Toggle Pan/Rotate",
+    },
     common: {
       expandDetails: "Show Parameters",
+      expandView: "View Settings",
+      expandCharts: "Chart Settings",
+      expandResults: "Result Analysis",
       prev: "Previous",
       next: "Next",
       expandAll: "Grid View",
@@ -406,6 +468,8 @@ export const translations: Record<LanguageCode, Translation> = {
       github: "GitHub Repo",
       report: "View Report (PDF)",
       contact: "Contact Leader",
+      copied: "Copied!",
+      emailCopiedMsg: "Email address copied to clipboard",
       acknowledgement: "Special thanks to AI assistants Google Gemini & OpenAI ChatGPT for development support.",
       designedBy: "Designed by Wang Junning",
       role_leader: "Leader / Web & Algo Design",

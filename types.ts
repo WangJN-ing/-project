@@ -55,6 +55,9 @@ export type LanguageCode = 'zh-CN' | 'zh-TW' | 'en-GB' | 'en-US';
 export interface Translation {
   title: string;
   subtitle: string;
+  header: {
+    systemOp: string;
+  };
   controls: {
     title: string;
     particles: string;
@@ -127,14 +130,25 @@ export interface Translation {
     foldingLocked: string;
     runningLocked: string;
   };
+  tooltips: {
+    openSidebar: string;
+    closeSidebar: string;
+    panMode: string;
+    rotateMode: string;
+    resetCamera: string;
+    togglePan: string;
+  };
   common: {
     expandDetails: string;
+    expandView: string;    // New
+    expandCharts: string;  // New
+    expandResults: string; // New
     prev: string;
     next: string;
     expandAll: string;
     collapse: string;
-    openCard: string;  // New: Generic open card tooltip
-    closeCard: string; // New: Generic close card tooltip
+    openCard: string;  
+    closeCard: string; 
   };
   footer: {
     about: string;
@@ -147,7 +161,9 @@ export interface Translation {
     links: string;        
     github: string;       
     report: string;       
-    contact: string;      
+    contact: string;
+    copied: string;       
+    emailCopiedMsg: string; // Added
     acknowledgement: string; 
     designedBy: string;   
     role_leader: string;

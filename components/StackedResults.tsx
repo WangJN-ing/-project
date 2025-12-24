@@ -20,18 +20,21 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
   const [dragOffset, setDragOffset] = useState(0);
 
   // --- HEIGHT MANAGEMENT ---
-  // In Card Mode: Compact heights to prevent overflow (container is now ~380px)
-  // In Fullscreen Mode: Generous heights
-  const histHeight = isFullscreen ? "h-[320px]" : "h-[140px]"; 
-  const singleHeight = isFullscreen ? "h-[400px]" : "h-[200px]";
+  // Optimized heights for mobile visibility
+  // Mobile Card Height: Increased to h-[600px] to fully show stacked charts
+  
+  // Chart container heights inside the cards
+  // Increased mobile chart height from 200px to 250px for better readability
+  const histHeight = isFullscreen ? "h-[320px]" : "h-[250px] md:h-[160px]"; 
+  const singleHeight = isFullscreen ? "h-[450px]" : "h-[420px] md:h-[260px]";
 
-  // Group 1: Histograms (Speed + Energy)
+  // Group 1: Histograms (Speed + Energy) - Compact Grid
   const HistogramGroup = () => (
-    <div className={`grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 p-1 md:p-2 ${isFullscreen ? '' : 'h-full overflow-y-auto'}`}>
-      <div className="bg-slate-50/50 rounded-xl p-2 md:p-3 border border-slate-200">
+    <div className={`grid grid-cols-1 md:grid-cols-2 gap-2 h-full ${isFullscreen ? 'p-4' : 'p-0 overflow-y-hidden'}`}>
+      <div className="bg-slate-50 rounded-lg p-2 border border-slate-100 flex flex-col justify-center">
          <DistributionCharts data={data} type="speed" isFinal={true} t={t} heightClass={histHeight} />
       </div>
-      <div className="bg-slate-50/50 rounded-xl p-2 md:p-3 border border-slate-200">
+      <div className="bg-slate-50 rounded-lg p-2 border border-slate-100 flex flex-col justify-center">
          <DistributionCharts data={data} type="energy" isFinal={true} t={t} heightClass={histHeight} />
       </div>
     </div>
@@ -152,12 +155,12 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
         zIndex = 5;
         opacity = 0.6;
         scale = 0.95;
-        translateY = 40; 
+        translateY = 35; // Tighter stack
     } else if (isPrev) {
         zIndex = 1; 
         opacity = 0; 
         scale = 0.9;
-        translateY = -40;
+        translateY = -35;
     } else {
         zIndex = 0;
         opacity = 0;
@@ -167,7 +170,7 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
         zIndex,
         opacity,
         transform: `scale(${scale}) translateY(${translateY}px)`,
-        transition: isDragging.current && isActive ? 'none' : 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
+        transition: isDragging.current && isActive ? 'none' : 'all 0.5s cubic-bezier(0.19, 1, 0.22, 1)',
         pointerEvents: isActive ? 'auto' : 'none'
     } as React.CSSProperties;
   };
@@ -175,21 +178,22 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
   return (
     <div 
         ref={containerRef} 
-        className={`relative transition-all duration-500 bg-slate-100 ${isFullscreen ? 'p-10 overflow-y-auto' : 'h-[380px] perspective-[1000px] select-none'}`}
+        // Increased container height on mobile to accommodate taller cards (h-[660px] on mobile)
+        className={`relative transition-all duration-500 bg-white ${isFullscreen ? 'p-10 overflow-y-auto' : 'h-[660px] md:h-[400px] perspective-[1000px] select-none'}`}
     >
         <button 
             onClick={toggleFullscreen}
-            className="absolute top-4 right-4 z-50 p-2 bg-white/80 backdrop-blur rounded-full shadow-lg hover:bg-sciblue-50 text-slate-600 hover:text-sciblue-600 transition-all active:scale-95 border border-slate-200"
+            className="absolute top-3 right-3 z-50 p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all border border-slate-200"
             title={isFullscreen ? t.common.collapse : t.common.expandAll}
         >
-            {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+            {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
         </button>
 
         {isFullscreen ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-7xl mx-auto pt-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-7xl mx-auto pt-10">
                 {cardGroups.map((group) => (
-                    <div key={group.id} className="bg-white rounded-2xl shadow-xl p-6 border border-slate-100">
-                         <h3 className="text-lg font-bold text-slate-700 mb-4 px-2 border-l-4 border-sciblue-500">{group.title}</h3>
+                    <div key={group.id} className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                         <h3 className="text-lg font-bold text-slate-800 mb-4 px-3 border-l-4 border-sciblue-500">{group.title}</h3>
                         <div className="h-full">
                             {group.content}
                         </div>
@@ -198,12 +202,11 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
             </div>
         ) : (
             <div 
-                className="w-full h-full relative flex items-center justify-center touch-none" // touch-none prevents page scroll when swiping cards
+                className="w-full h-full relative flex items-center justify-center touch-none" 
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
-                
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
@@ -211,14 +214,15 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
                 {cardGroups.map((group, index) => (
                     <div
                         key={group.id}
-                        className="absolute w-full max-w-3xl h-[340px] bg-white/80 backdrop-blur-xl border border-white/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
+                        // Mobile Card Height: Increased to h-[600px] to allow full visibility of stacked charts
+                        className="absolute w-full max-w-4xl h-[600px] md:h-[360px] bg-white border border-slate-200 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
                         style={getCardStyle(index)}
                     >
-                        <div className="h-8 w-full flex items-center justify-center cursor-ns-resize opacity-50 hover:opacity-100 border-b border-slate-100 shrink-0">
-                             <div className="w-12 h-1 bg-slate-300 rounded-full"></div>
+                        <div className="h-6 w-full flex items-center justify-center cursor-ns-resize opacity-30 hover:opacity-60 shrink-0">
+                             <div className="w-8 h-1 bg-slate-400 rounded-full"></div>
                         </div>
-                        <div className="flex-1 p-4 relative flex flex-col min-h-0">
-                             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 select-none">{group.title}</div>
+                        <div className="flex-1 px-3 pb-3 pt-0 relative flex flex-col min-h-0">
+                             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 select-none text-center">{group.title}</div>
                              <div className="flex-1 min-h-0 w-full relative">
                                 {group.content}
                              </div>
@@ -226,21 +230,24 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
                     </div>
                 ))}
 
-                {/* Navigation Buttons - Positioned to the Right Center to avoid blocking bottom Axis labels */}
-                <div className="absolute right-2 md:right-6 top-1/2 transform -translate-y-1/2 flex flex-col gap-3 z-20 pointer-events-none">
+                {/* Navigation Buttons - Updated to match Desktop Style everywhere */}
+                <div className="absolute z-20 pointer-events-none flex 
+                    bottom-4 left-1/2 -translate-x-1/2 flex-row gap-8
+                    md:top-1/2 md:right-4 md:bottom-auto md:left-auto md:translate-x-0 md:-translate-y-1/2 md:flex-col md:gap-2"
+                >
                      <button 
                         onClick={handlePrev}
-                        className="pointer-events-auto p-3 bg-white/80 backdrop-blur-sm shadow-lg rounded-full text-slate-500 hover:text-sciblue-600 hover:scale-110 hover:bg-white transition-all border border-slate-200 active:scale-95 flex items-center justify-center group"
-                        title="Previous"
+                        className="pointer-events-auto w-10 h-10 md:w-8 md:h-8 bg-white shadow-lg md:shadow-sm rounded-full text-slate-500 hover:text-sciblue-600 hover:border-sciblue-200 hover:shadow-md transition-all border border-slate-200 active:scale-95 flex items-center justify-center"
+                        title={t.common.prev}
                      >
-                        <ChevronUp size={24} className="group-hover:-translate-y-0.5 transition-transform"/>
+                        <ChevronUp size={20} />
                      </button>
                      <button 
                         onClick={handleNext}
-                        className="pointer-events-auto p-3 bg-white/80 backdrop-blur-sm shadow-lg rounded-full text-slate-500 hover:text-sciblue-600 hover:scale-110 hover:bg-white transition-all border border-slate-200 active:scale-95 flex items-center justify-center group"
-                        title="Next"
+                        className="pointer-events-auto w-10 h-10 md:w-8 md:h-8 bg-white shadow-lg md:shadow-sm rounded-full text-slate-500 hover:text-sciblue-600 hover:border-sciblue-200 hover:shadow-md transition-all border border-slate-200 active:scale-95 flex items-center justify-center"
+                        title={t.common.next}
                      >
-                        <ChevronDown size={24} className="group-hover:translate-y-0.5 transition-transform"/>
+                        <ChevronDown size={20} />
                      </button>
                 </div>
             </div>

@@ -1,179 +1,173 @@
 import React, { useState } from 'react';
 import { Translation } from '../types';
-import { Github, FileText, Mail, GraduationCap, Sparkles, ExternalLink, Check, Copy } from 'lucide-react';
+import { Github, FileText, Mail, GraduationCap, Sparkles, Check, User } from 'lucide-react';
 
 interface FooterProps {
   t: Translation;
+  showNotification: (text: string, duration?: number, type?: 'info' | 'success' | 'warning') => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ t }) => {
+const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
   const [emailCopied, setEmailCopied] = useState(false);
 
   const handleEmailClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const email = "3381173206@qq.com";
     
-    // 1. Copy to clipboard
     navigator.clipboard.writeText(email).then(() => {
       setEmailCopied(true);
-      setTimeout(() => setEmailCopied(false), 2000); // Reset after 2s
+      showNotification(t.footer.emailCopiedMsg, 2000, 'success');
+      setTimeout(() => setEmailCopied(false), 2000); 
     });
-
-    // 2. Try to open mail client as fallback
     window.location.href = `mailto:${email}`;
   };
 
+  // Header Style - Brightened to text-slate-300
+  const HeaderStyle = "text-xs font-bold text-slate-300 uppercase tracking-widest mb-6 h-5 flex items-center";
+
   return (
-    <footer className="mt-16 pt-12 pb-8 border-t border-slate-200/60">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
-        
-        {/* Col 1: Brand & School (Span 4) */}
-        <div className="md:col-span-4 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold tracking-widest uppercase border border-slate-200">
-             BJTU Weihai 2025
-          </div>
+    <footer className="w-full bg-slate-900 text-slate-300 mt-20 border-t border-slate-800 relative overflow-hidden z-10 shrink-0">
+      {/* Decorative Top Glow */}
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-sciblue-500/50 to-transparent"></div>
+      
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-y-12 md:gap-x-12">
           
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-200 shadow-sm mt-1">
-                <GraduationCap size={20} className="text-sciblue-600" />
+          {/* --- Col 1: Brand (Span 4) --- */}
+          <div className="md:col-span-4 flex flex-col items-start pr-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 text-sciblue-300 text-[10px] font-bold tracking-widest uppercase border border-slate-700 mb-6 shadow-sm">
+               BJTU Weihai 2025
             </div>
-            <div>
-                <h2 className="text-xl font-bold text-slate-800 tracking-tight leading-tight">{t.title}</h2>
-                <p className="text-sm leading-relaxed text-slate-500 mt-1 max-w-xs">
-                    {t.footer.school}
-                </p>
-            </div>
-          </div>
-
-          <p className="text-xs text-slate-400 pt-2 font-mono">{t.footer.version}</p>
-        </div>
-
-        {/* Col 2: Team (Span 3) */}
-        <div className="md:col-span-3 space-y-4">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">{t.footer.team}</h3>
-          <ul className="space-y-3 text-sm">
-            {/* Wang Junning - Leader */}
-            <li className="flex flex-col gap-1 group">
-               <div className="flex items-center gap-2">
-                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 group-hover:scale-125 transition-transform"></span>
-                   <span className="text-slate-700 font-bold group-hover:text-sciblue-600 transition-colors">王骏宁 (Wang Junning)</span>
-               </div>
-               <span className="text-[10px] bg-amber-50 border border-amber-100 text-amber-600 px-1.5 py-0.5 rounded self-start ml-3.5">
-                  {t.footer.role_leader}
-               </span>
-            </li>
             
-            {/* Chen Che - Algo */}
-            <li className="flex flex-col gap-1 group">
-               <div className="flex items-center gap-2">
-                   <span className="w-1.5 h-1.5 rounded-full bg-sciblue-400 group-hover:scale-125 transition-transform"></span>
-                   <span className="text-slate-600 font-medium group-hover:text-sciblue-600 transition-colors">陈彻 (Chen Che)</span>
-               </div>
-               <span className="text-[10px] text-slate-400 ml-3.5">
-                  {t.footer.role_algo}
-               </span>
-            </li>
-
-            {/* Research Group */}
-            <li className="pt-1">
-               <div className="flex items-start gap-2">
-                   <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1.5"></span>
-                   <div className="flex flex-col">
-                       <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wide mb-0.5">{t.footer.role_research}</span>
-                       <p className="text-slate-500 leading-relaxed text-xs">
-                          申杰霖, 季唐羽, 欧一帅, 张子航
-                       </p>
-                   </div>
-               </div>
-            </li>
-          </ul>
-        </div>
-
-        {/* Col 3: Supervisor & Ack (Span 3) */}
-        <div className="md:col-span-3 space-y-6">
-          <div>
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">{t.footer.supervisor}</h3>
-            <div className="flex items-center gap-3 text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 shadow-sm inline-flex">
-              <div className="bg-slate-50 p-1.5 rounded-full text-slate-400"><GraduationCap size={14}/></div>
-              <span className="font-medium text-sm">赵翔 (Zhao Xiang)</span>
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-700 shadow-inner mt-1 shrink-0 group">
+                  <GraduationCap size={24} className="text-sciblue-400 group-hover:scale-110 transition-transform duration-500" />
+              </div>
+              <div>
+                  <h2 className="text-xl font-bold text-white tracking-tight leading-tight mb-2">{t.title}</h2>
+                  {/* Lightened description from slate-400 to slate-300 */}
+                  <p className="text-sm leading-relaxed text-slate-300">
+                      {t.footer.school}
+                  </p>
+              </div>
             </div>
-          </div>
-          
-          <div>
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Acknowledgements</h3>
-            <div className="text-xs text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100/50">
-               <p className="flex items-start gap-2">
-                  <Sparkles size={12} className="mt-0.5 text-amber-400 shrink-0"/>
-                  <span>{t.footer.acknowledgement}</span>
-               </p>
-            </div>
-          </div>
-        </div>
 
-        {/* Col 4: Links (Span 2) */}
-        <div className="md:col-span-2 space-y-4">
-           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">{t.footer.links}</h3>
-           <div className="flex flex-col gap-3">
-              {/* GitHub Link */}
-              <a 
-                href="https://github.com/WangJN-ing/-project" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="flex items-center gap-2 text-sm text-slate-600 hover:text-black transition-colors group p-2 hover:bg-white rounded-lg -ml-2"
-              >
-                  <div className="p-1.5 bg-white border border-slate-200 rounded-md shadow-sm group-hover:border-slate-300 group-hover:scale-110 transition-all">
-                    <Github size={16}/> 
-                  </div>
-                  <span>{t.footer.github}</span>
-                  <ExternalLink size={10} className="opacity-0 group-hover:opacity-50 transition-opacity ml-auto" />
-              </a>
+            <p className="text-xs text-slate-400 mt-auto font-mono">{t.footer.version}</p>
+          </div>
+
+          {/* --- Col 2: Team (Span 3) --- */}
+          <div className="md:col-span-3">
+            <h3 className={HeaderStyle}>{t.footer.team}</h3>
+            <ul className="space-y-5">
+              {/* Leader */}
+              <li className="flex flex-col gap-1 group">
+                 <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 group-hover:border-amber-500/50 transition-colors">
+                        <User size={14} className="text-slate-300 group-hover:text-amber-400"/>
+                     </div>
+                     <div>
+                        <span className="text-white font-bold text-sm block group-hover:text-amber-400 transition-colors">王骏宁 (Wang Junning)</span>
+                        <span className="text-[10px] text-amber-500 font-medium">
+                            {t.footer.role_leader}
+                        </span>
+                     </div>
+                 </div>
+              </li>
               
-              {/* PDF Link */}
-              <a 
-                href="/Project_Report.pdf" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                download="Project_Report.pdf"
-                className="flex items-center gap-2 text-sm text-slate-600 hover:text-sciblue-600 transition-colors group p-2 hover:bg-white rounded-lg -ml-2"
-              >
-                  <div className="p-1.5 bg-white border border-slate-200 rounded-md shadow-sm group-hover:border-sciblue-200 group-hover:text-sciblue-500 group-hover:scale-110 transition-all">
-                    <FileText size={16}/> 
-                  </div>
-                  <span>{t.footer.report}</span>
-                  <ExternalLink size={10} className="opacity-0 group-hover:opacity-50 transition-opacity ml-auto" />
-              </a>
+              {/* Algo */}
+              <li className="flex flex-col gap-1 group">
+                 <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 group-hover:border-sciblue-500/50 transition-colors">
+                        <User size={14} className="text-slate-300 group-hover:text-sciblue-400"/>
+                     </div>
+                     <div>
+                        <span className="text-slate-200 font-medium text-sm block group-hover:text-sciblue-400 transition-colors">陈彻 (Chen Che)</span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                            {t.footer.role_algo}
+                        </span>
+                     </div>
+                 </div>
+              </li>
 
-              {/* Contact Link - Enhanced with Copy Functionality */}
-              <a 
-                href="mailto:3381173206@qq.com" 
-                onClick={handleEmailClick}
-                className="flex items-center gap-2 text-sm text-slate-600 hover:text-emerald-600 transition-colors group p-2 hover:bg-white rounded-lg -ml-2 cursor-pointer"
-                title="3381173206@qq.com (点击复制)"
-              >
-                  <div className={`
-                    p-1.5 bg-white border rounded-md shadow-sm transition-all duration-300
-                    ${emailCopied 
-                        ? 'border-emerald-200 text-emerald-500 scale-110 bg-emerald-50' 
-                        : 'border-slate-200 group-hover:border-emerald-200 group-hover:text-emerald-500 group-hover:scale-110'
-                    }
-                  `}>
-                    {emailCopied ? <Check size={16}/> : <Mail size={16}/>}
-                  </div>
-                  <span className={`transition-all ${emailCopied ? 'text-emerald-600 font-bold' : ''}`}>
-                    {emailCopied ? "邮箱已复制!" : t.footer.contact}
-                  </span>
-                  {!emailCopied && <Copy size={10} className="opacity-0 group-hover:opacity-40 transition-opacity ml-auto" />}
-              </a>
-           </div>
+              {/* Research */}
+              <li className="pt-2 border-t border-slate-800/50">
+                 <div className="flex flex-col">
+                     <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wide mb-1">{t.footer.role_research}</span>
+                     <p className="text-slate-300 text-xs leading-relaxed">
+                        申杰霖, 季唐羽, 欧一帅, 张子航
+                     </p>
+                 </div>
+              </li>
+            </ul>
+          </div>
+
+          {/* --- Col 3: Supervisor & Ack (Span 3) --- */}
+          <div className="md:col-span-3 flex flex-col gap-8">
+            {/* Supervisor Block */}
+            <div>
+              <h3 className={HeaderStyle}>{t.footer.supervisor}</h3>
+              <div className="flex items-center gap-3 bg-slate-800/40 p-3 rounded-lg border border-slate-700/50 hover:bg-slate-800 transition-colors group">
+                <div className="bg-slate-700/50 p-2 rounded-full text-slate-300 group-hover:text-white transition-colors">
+                    <GraduationCap size={16}/>
+                </div>
+                <span className="font-medium text-sm text-white">赵翔 (Zhao Xiang)</span>
+              </div>
+            </div>
+            
+            {/* Acknowledgements Block - ALIGNED VERTICALLY */}
+            <div>
+              <h3 className={HeaderStyle}>Acknowledgements</h3>
+              <div className="text-xs text-slate-300 leading-relaxed bg-slate-800/30 p-4 rounded-xl border border-slate-700 hover:border-sciblue-500/30 transition-colors group">
+                 <p className="flex items-start gap-3">
+                    <Sparkles size={16} className="mt-0.5 text-amber-400 shrink-0 fill-amber-500/20 group-hover:animate-pulse"/>
+                    <span className="leading-5">{t.footer.acknowledgement}</span>
+                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* --- Col 4: Links (Span 2) --- */}
+          <div className="md:col-span-2">
+             <h3 className={HeaderStyle}>{t.footer.links}</h3>
+             <div className="flex flex-col gap-2">
+                {/* GitHub */}
+                <a href="https://github.com/WangJN-ing/-project" target="_blank" rel="noopener noreferrer" 
+                   className="flex items-center gap-3 text-sm text-slate-300 hover:text-white transition-all group p-2 hover:bg-slate-800 rounded-lg -ml-2"
+                >
+                    <Github size={18} className="group-hover:scale-110 transition-transform"/> 
+                    <span>{t.footer.github}</span>
+                </a>
+                
+                {/* PDF */}
+                <a href="/Project_Report.pdf" target="_blank" rel="noopener noreferrer" download="Project_Report.pdf"
+                   className="flex items-center gap-3 text-sm text-slate-300 hover:text-white transition-all group p-2 hover:bg-slate-800 rounded-lg -ml-2"
+                >
+                    <FileText size={18} className="group-hover:text-sciblue-400 group-hover:scale-110 transition-all"/> 
+                    <span>{t.footer.report}</span>
+                </a>
+
+                {/* Email */}
+                <button onClick={handleEmailClick}
+                   className="flex items-center gap-3 text-sm text-slate-300 hover:text-white transition-all group p-2 hover:bg-slate-800 rounded-lg -ml-2 w-full text-left"
+                >
+                    {emailCopied ? <Check size={18} className="text-emerald-400"/> : <Mail size={18} className="group-hover:text-emerald-400 group-hover:scale-110 transition-all"/>}
+                    <span className={emailCopied ? "text-emerald-400" : ""}>{emailCopied ? t.footer.copied : t.footer.contact}</span>
+                </button>
+             </div>
+          </div>
+
         </div>
-
       </div>
       
-      <div className="mt-12 pt-6 border-t border-slate-100 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-400">
-        <p>© 2025 Hard Sphere Project. All rights reserved.</p>
-        <p className="mt-2 md:mt-0 font-medium tracking-wide">
-           {t.footer.designedBy}
-        </p>
+      {/* Bottom Bar */}
+      <div className="bg-slate-950/50 border-t border-slate-800 py-6">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-400 uppercase tracking-widest">
+            <p>© 2025 Hard Sphere Project. All rights reserved.</p>
+            <p className="mt-2 md:mt-0 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-sciblue-500"></span>
+                {t.footer.designedBy}
+            </p>
+        </div>
       </div>
     </footer>
   );

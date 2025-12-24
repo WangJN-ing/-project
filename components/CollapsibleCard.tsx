@@ -17,6 +17,7 @@ interface CollapsibleCardProps {
   showNotification?: (text: string) => void;
   hideFooter?: boolean;       // Option to hide the footer expand button
   contentClassName?: string;  // Allow custom content padding
+  expandText?: string;        // Custom text for the footer expand button
 }
 
 const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ 
@@ -33,7 +34,8 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
   lockedWarningText,
   showNotification,
   hideFooter = false,
-  contentClassName = "p-4 md:p-6"
+  contentClassName = "p-4 md:p-6",
+  expandText
 }) => {
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
 
@@ -113,15 +115,14 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
         </div>
       </div>
       
-      {/* Footer "Expand" bar - kept clickable for convenience when collapsed at the bottom, 
-          but visual style updated to match the clean look */}
+      {/* Footer "Expand" bar */}
       {!isExpanded && !hideFooter && (
         <div 
             className="h-9 md:h-10 flex items-center justify-center text-slate-400 text-xs font-medium bg-slate-50/30 cursor-pointer hover:bg-slate-50 hover:text-sciblue-600 transition-colors border-t border-slate-100 tracking-wide uppercase group"
             onClick={handleToggle}
         >
             <span className="flex items-center gap-2 group-active:scale-95 transition-transform">
-                <Maximize2 size={12}/> {t.common.expandDetails}
+                <Maximize2 size={12}/> {expandText || t.common.expandDetails}
             </span>
         </div>
       )}
