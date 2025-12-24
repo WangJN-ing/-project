@@ -375,8 +375,8 @@ function App() {
                 </div>
             </div>
             
-            {/* Metallic Title with CSS Animation - Smaller text in landscape */}
-            <h1 className="text-4xl landscape:text-3xl md:text-6xl font-serif font-black mb-4 landscape:mb-1 tracking-tight text-metallic">
+            {/* Metallic Title with CSS Animation - Adjusted for mobile wrapping */}
+            <h1 className="text-2xl sm:text-4xl landscape:text-3xl md:text-6xl font-serif font-black mb-4 landscape:mb-1 tracking-tight text-metallic whitespace-nowrap">
                 {t.title}
             </h1>
             
@@ -453,14 +453,17 @@ function App() {
             <button
                 onClick={() => setIsSidebarOpen(true)}
                 title={t.tooltips.openSidebar}
-                className="flex items-center gap-3 bg-white/90 backdrop-blur-md pr-5 pl-1.5 py-1.5 rounded-full border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgb(14,165,233,0.15)] hover:scale-105 active:scale-95 transition-all group"
+                // Reduced padding on mobile: pr-3 pl-1 py-1
+                className="flex items-center gap-3 bg-white/90 backdrop-blur-md pr-3 pl-1 py-1 md:pr-5 md:pl-1.5 md:py-1.5 rounded-full border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgb(14,165,233,0.15)] hover:scale-105 active:scale-95 transition-all group"
             >
-                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sciblue-500 to-indigo-600 flex items-center justify-center border border-white/20 text-white shadow-inner group-hover:rotate-12 transition-transform duration-500">
-                    <Atom size={18} />
+                 {/* Reduced size: w-6 h-6 on mobile */}
+                 <div className="w-6 h-6 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-sciblue-500 to-indigo-600 flex items-center justify-center border border-white/20 text-white shadow-inner group-hover:rotate-12 transition-transform duration-500">
+                    <Atom size={isMobile ? 12 : 18} />
                  </div>
                  <div className="flex flex-col items-start leading-none group-hover:text-sciblue-600 transition-colors duration-300">
-                   <span className="text-[11px] font-extrabold text-slate-700 tracking-widest uppercase font-mono group-hover:text-sciblue-600">BJTU</span>
-                   <span className="text-[9px] font-bold text-slate-400 tracking-wide group-hover:text-sciblue-400">WEIHAI</span>
+                   {/* Reduced font size */}
+                   <span className="text-[8px] md:text-[11px] font-extrabold text-slate-700 tracking-widest uppercase font-mono group-hover:text-sciblue-600">BJTU</span>
+                   <span className="text-[8px] md:text-[9px] font-bold text-slate-400 tracking-wide group-hover:text-sciblue-400">WEIHAI</span>
                 </div>
             </button>
 
@@ -468,23 +471,24 @@ function App() {
                 <button
                     onClick={handleStartPause}
                     title={isRunning ? t.controls.pause : t.controls.start}
+                    // Reduced size: w-8 h-8 on mobile
                     className={`
-                        w-11 h-11 rounded-full shadow-lg border backdrop-blur-md transition-all active:scale-90 flex items-center justify-center
+                        w-8 h-8 md:w-11 md:h-11 rounded-full shadow-lg border backdrop-blur-md transition-all active:scale-90 flex items-center justify-center
                         ${isRunning 
                             ? 'bg-amber-500 border-amber-400 text-white hover:bg-amber-400 hover:shadow-amber-200/50' 
                             : 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 hover:shadow-slate-300/50'
                         }
                     `}
                 >
-                    {isRunning ? <Pause size={18} fill="currentColor"/> : <Play size={18} fill="currentColor" className="ml-0.5"/>}
+                    {isRunning ? <Pause size={isMobile ? 14 : 18} fill="currentColor"/> : <Play size={isMobile ? 14 : 18} fill="currentColor" className="ml-0.5"/>}
                 </button>
             )}
         </div>
 
       </main>
 
-      {/* VISITOR TOAST */}
-      <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] transition-all duration-700 ease-in-out ${showVisitorToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8 pointer-events-none'}`}>
+      {/* VISITOR TOAST - Moved to top-28 (112px) on mobile to clear buttons */}
+      <div className={`fixed top-28 md:top-6 left-1/2 transform -translate-x-1/2 z-[100] transition-all duration-700 ease-in-out ${showVisitorToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8 pointer-events-none'}`}>
         <div className="bg-white/90 backdrop-blur-md text-slate-600 px-5 py-2 rounded-full shadow-xl border border-slate-100 flex items-center gap-3">
             <span className="bg-emerald-100 p-1 rounded-full"><User size={12} className="text-emerald-600"/></span>
             {/* Localized Visitor String */}

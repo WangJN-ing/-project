@@ -264,6 +264,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
 
   // --- TOUCH EVENTS (Mobile) ---
   const handleTouchStart = (e: React.TouchEvent) => {
+     // If not focused, do not block default behavior unless it's a 2-finger gesture meant to start interaction
      if (e.touches.length === 2) {
         if (!isFocused) onFocusChange(true);
         const t1 = e.touches[0];
@@ -271,13 +272,19 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
         lastTouchDist.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
         lastTouchCenter.current = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
      } else if (e.touches.length === 1) {
-         const t = e.touches[0];
-         lastMousePos.current = { x: t.clientX, y: t.clientY };
-         isDragging.current = true;
+         // CRITICAL FIX: Only capture drag if focused. Otherwise, let browser scroll.
+         if (isFocused) {
+            const t = e.touches[0];
+            lastMousePos.current = { x: t.clientX, y: t.clientY };
+            isDragging.current = true;
+         }
      }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+      // If not focused, let the browser handle scrolling (handled by CSS touch-action)
+      if (!isFocused) return;
+
       if (e.touches.length === 2 && lastTouchDist.current !== null) {
           const t1 = e.touches[0];
           const t2 = e.touches[1];
@@ -293,7 +300,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
               lastTouchCenter.current = currentCenter;
           }
           lastTouchDist.current = currentDist;
-      } else if (e.touches.length === 1 && isFocused && isDragging.current) {
+      } else if (e.touches.length === 1 && isDragging.current) {
           const t = e.touches[0];
           const dx = t.clientX - lastMousePos.current.x;
           const dy = t.clientY - lastMousePos.current.y;
@@ -333,13 +340,12 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
 
         <div 
             ref={containerRef}
-            // Landscape Optimization: 
-            // - landscape:h-[240px] (For mobile landscape)
-            // - md:landscape:h-[500px] (Restores height for Desktop/Tablet landscape)
+            // CRITICAL FIX: Explicit inline style for touch-action ensures browser respects scrolling when not focused
+            style={{ touchAction: isFocused ? 'none' : 'pan-y' }}
             className={`
                 relative w-full rounded-lg overflow-hidden group bg-slate-900
                 h-[380px] landscape:h-[240px] sm:h-[450px] md:landscape:h-[500px] md:h-[500px] lg:h-[550px]
-                transition-all duration-300 cubic-bezier(0.34, 1.56, 0.64, 1) touch-none select-none
+                transition-all duration-300 cubic-bezier(0.34, 1.56, 0.64, 1) select-none
                 ${isFocused 
                     ? 'scale-[1.01] shadow-[0_0_0_4px_rgba(56,189,248,0.3)] ring-2 ring-sciblue-500 z-10' 
                     : 'scale-100 shadow-inner border border-slate-700 hover:border-sciblue-400/50'
@@ -349,7 +355,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
         >
             <canvas
                 ref={canvasRef}
-                className="w-full h-full block touch-none"
+                className="w-full h-full block"
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
