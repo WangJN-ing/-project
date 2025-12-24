@@ -90,7 +90,7 @@ const Footer: React.FC<FooterProps> = ({ t }) => {
             <div className="text-xs text-slate-400 leading-relaxed bg-slate-800/30 p-3 rounded-lg border border-slate-700/30">
                <p className="flex items-start gap-2">
                   <Sparkles size={12} className="mt-0.5 text-sciblue-400 shrink-0"/>
-                  <span>Special thanks to AI assistants <strong>Google Gemini</strong> & <strong>OpenAI ChatGPT</strong> for development support.</span>
+                  <span>{t.footer.acknowledgement}</span>
                </p>
             </div>
           </div>
@@ -98,21 +98,21 @@ const Footer: React.FC<FooterProps> = ({ t }) => {
 
         {/* Col 4: Links (Span 2) */}
         <div className="md:col-span-2 space-y-4">
-           <h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest mb-4">Links</h3>
+           <h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest mb-4">{t.footer.links}</h3>
            <div className="flex flex-col gap-4">
               {/* GitHub Link */}
               <a href="https://github.com/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
-                  <Github size={16}/> <span>GitHub Repo</span>
+                  <Github size={16}/> <span>{t.footer.github}</span>
               </a>
               
               {/* PDF Link */}
               <a href="/Project_Report.pdf" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
-                  <FileText size={16}/> <span>View Report (PDF)</span>
+                  <FileText size={16}/> <span>{t.footer.report}</span>
               </a>
 
               {/* Contact Link */}
               <a href="mailto:3381173206@qq.com" className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors group">
-                  <Mail size={16} className="group-hover:text-sciblue-400 transition-colors"/> <span>Contact Leader</span>
+                  <Mail size={16} className="group-hover:text-sciblue-400 transition-colors"/> <span>{t.footer.contact}</span>
               </a>
            </div>
         </div>
@@ -122,7 +122,7 @@ const Footer: React.FC<FooterProps> = ({ t }) => {
       <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
         <p>© 2025 Hard Sphere Project. All rights reserved.</p>
         <p className="mt-2 md:mt-0 text-slate-400 hover:text-white transition-colors cursor-default font-medium tracking-wide">
-           Designed by Wang Junning
+           {t.footer.designedBy}
         </p>
       </div>
     </footer>

@@ -31,9 +31,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   // Mouse Refs
   const isDragging = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
-  const dragStartTime = useRef(0);
-  const dragStartPos = useRef({ x: 0, y: 0 });
-
+  
   // Touch Refs (For Pinch Zoom)
   const lastTouchDist = useRef<number | null>(null);
   const lastTouchCenter = useRef<{x: number, y: number} | null>(null);
@@ -46,9 +44,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   // Handle Click Outside to Exit Focus
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // If we are focused, and click happens OUTSIDE the container
       if (isFocused && containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        // Just exit focus cleanly. No warning needed as this is the intended exit action.
         onFocusChange(false);
       }
     };
@@ -59,7 +55,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     };
   }, [isFocused, onFocusChange]);
 
-  // Toggle Focus Logic (Manual)
+  // Toggle Focus Logic
   const toggleFocus = () => {
     const newState = !isFocused;
     onFocusChange(newState);
@@ -77,6 +73,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
 
   // 3D Projection Helpers
   const project = (x: number, y: number, z: number, logicalWidth: number, logicalHeight: number) => {
+    // Center the system
     let px = x - L / 2;
     let py = y - L / 2;
     let pz = z - L / 2;
@@ -84,6 +81,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     const radY = (rotation.y * Math.PI) / 180;
     const radX = (rotation.x * Math.PI) / 180;
 
+    // Rotation Order: Y then X
     let x1 = px * Math.cos(radY) - pz * Math.sin(radY);
     let z1 = px * Math.sin(radY) + pz * Math.cos(radY);
     
@@ -91,8 +89,9 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     let z2 = py * Math.sin(radX) + z1 * Math.cos(radX);
 
     const fov = 800; 
-    // Auto-fit Logic
-    const baseScale = Math.min(logicalWidth, logicalHeight) / (L * 1.9); 
+    
+    // Auto-fit Logic: Use the smaller dimension to determine base scale to ensure cube fits
+    const baseScale = Math.min(logicalWidth, logicalHeight) / (L * 1.8); 
     
     const perspective = fov / (fov + z2);
     
@@ -108,12 +107,14 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Get current logical size (corrected for DPR in the resize observer)
     const dpr = window.devicePixelRatio || 1;
     const width = canvas.width / dpr;
     const height = canvas.height / dpr;
 
     ctx.clearRect(0, 0, width, height);
     
+    // Draw Box Edges
     const vertices = [
       [0, 0, 0], [L, 0, 0], [L, L, 0], [0, L, 0],
       [0, 0, L], [L, 0, L], [L, L, L], [0, L, L]
@@ -138,6 +139,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     });
     ctx.stroke();
 
+    // Draw Particles
     const projectedParticles = particles.map(p => {
         const proj = project(p.x, p.y, p.z, width, height);
         return { ...p, ...proj };
@@ -156,6 +158,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
       ctx.fillStyle = grad;
       ctx.fill();
       
+      // Specular highlight
       ctx.beginPath();
       ctx.arc(p.x - radius/3, p.y - radius/3, radius/4, 0, 2 * Math.PI);
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -179,13 +182,45 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     return () => cancelAnimationFrame(animationFrameId);
   }, [draw]);
 
+  // --- RESIZE OBSERVER (Fixes Aspect Ratio Distortion) ---
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const updateSize = () => {
+       const { width, height } = container.getBoundingClientRect();
+       const dpr = window.devicePixelRatio || 1;
+       
+       // Only update if dimensions actually changed to avoid loop
+       if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+           canvas.width = width * dpr;
+           canvas.height = height * dpr;
+           
+           const ctx = canvas.getContext('2d');
+           if (ctx) ctx.scale(dpr, dpr);
+           
+           // Force immediate redraw to prevent flickering/stretching frame
+           draw(); 
+       }
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+        // Use requestAnimationFrame to sync with browser paint cycle
+        requestAnimationFrame(updateSize);
+    });
+
+    resizeObserver.observe(container);
+    // Initial size set
+    updateSize();
+
+    return () => resizeObserver.disconnect();
+  }, [draw]); // Depend on draw so it can be called inside
+
   // --- MOUSE & WHEEL EVENTS (Desktop) ---
   useEffect(() => {
     const handleGlobalWheel = (e: WheelEvent) => {
-      // Only intervene if we are FOCUSED
       if (!isFocused) return;
-
-      // CRITICAL CHANGE: Always prevent default scroll when focused to lock the page
       e.preventDefault(); 
       e.stopPropagation();
 
@@ -193,18 +228,14 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
       const isOverCanvas = container && container.contains(e.target as Node);
 
       if (isOverCanvas) {
-         // If mouse is inside, perform Zoom
          const zoomSensitivity = 0.001;
          const zoomFactor = -e.deltaY * zoomSensitivity * 0.5;
          setScale(prev => Math.max(0.2, Math.min(5, prev + zoomFactor)));
       } else {
-         // If mouse is outside but still focused, WARN the user.
-         // They are trying to scroll the page but it's locked.
          showNotification(t.canvas.scrollWarning);
       }
     };
     
-    // Use passive: false to allow e.preventDefault()
     window.addEventListener('wheel', handleGlobalWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleGlobalWheel);
   }, [isFocused, showNotification, t]);
@@ -213,15 +244,13 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     if (!isFocused) { toggleFocus(); return; }
     isDragging.current = true;
     lastMousePos.current = { x: e.clientX, y: e.clientY };
-    dragStartTime.current = Date.now();
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isFocused || !isDragging.current) return;
     const dx = e.clientX - lastMousePos.current.x;
     const dy = e.clientY - lastMousePos.current.y;
-    if (isPanMode || e.buttons === 2) { // Right click also pans
+    if (isPanMode || e.buttons === 2) { 
         setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
     } else {
         setRotation(prev => ({ x: prev.x + dy * 0.5, y: prev.y + dx * 0.5 }));
@@ -229,22 +258,18 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     lastMousePos.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (!isDragging.current) return;
+  const handleMouseUp = () => {
     isDragging.current = false;
   };
 
-  // --- TOUCH EVENTS (Mobile - Pinch to Zoom & Touch Drag) ---
+  // --- TOUCH EVENTS (Mobile) ---
   const handleTouchStart = (e: React.TouchEvent) => {
      if (e.touches.length === 2) {
         if (!isFocused) onFocusChange(true);
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         lastTouchDist.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        lastTouchCenter.current = {
-            x: (t1.clientX + t2.clientX) / 2,
-            y: (t1.clientY + t2.clientY) / 2
-        };
+        lastTouchCenter.current = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
      } else if (e.touches.length === 1) {
          const t = e.touches[0];
          lastMousePos.current = { x: t.clientX, y: t.clientY };
@@ -253,36 +278,22 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-      if (isFocused) {
-          // Block mobile scroll if focused
-          // e.preventDefault(); // React synthetic events might not support this reliably in all cases, but 'touch-none' css helps
-      }
-
       if (e.touches.length === 2 && lastTouchDist.current !== null) {
-          // PINCH ZOOM
           const t1 = e.touches[0];
           const t2 = e.touches[1];
           const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-          
           const scaleFactor = currentDist / lastTouchDist.current;
           setScale(prev => Math.max(0.2, Math.min(5, prev * scaleFactor))); 
 
-          // Two finger Pan
           if (lastTouchCenter.current) {
-              const currentCenter = {
-                  x: (t1.clientX + t2.clientX) / 2,
-                  y: (t1.clientY + t2.clientY) / 2
-              };
+              const currentCenter = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
               const dx = currentCenter.x - lastTouchCenter.current.x;
               const dy = currentCenter.y - lastTouchCenter.current.y;
               setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
               lastTouchCenter.current = currentCenter;
           }
-
           lastTouchDist.current = currentDist;
-
       } else if (e.touches.length === 1 && isFocused && isDragging.current) {
-          // ONE FINGER ROTATE (or PAN if mode active)
           const t = e.touches[0];
           const dx = t.clientX - lastMousePos.current.x;
           const dy = t.clientY - lastMousePos.current.y;
@@ -309,26 +320,9 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     setPan({ x: 0, y: 0 }); 
   };
 
-  // Resize Observer
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current && canvasRef.current) {
-        const { width, height } = containerRef.current.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        canvasRef.current.width = width * dpr;
-        canvasRef.current.height = height * dpr;
-        const ctx = canvasRef.current.getContext('2d');
-        ctx?.scale(dpr, dpr); 
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize(); 
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   return (
     <div className="flex flex-col gap-2 relative">
-        {/* Interaction Hint (Top bar) */}
+        {/* Interaction Hint */}
         <div className="flex justify-between items-center px-1 text-[10px] text-sciblue-600 uppercase tracking-widest font-bold">
             <span className="flex items-center gap-1">
                 {isFocused ? <Lock size={10}/> : <Unlock size={10}/>}
@@ -357,18 +351,17 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
                 onMouseUp={handleMouseUp}
                 onMouseLeave={() => { isDragging.current = false; }}
                 onContextMenu={(e) => { e.preventDefault(); }} 
-                
-                // Touch Events for Mobile
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-
                 style={{ width: '100%', height: '100%' }}
             />
             
+            {/* BOTTOM GRADIENT MASK - Updated for better blending with bg-slate-900 */}
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent pointer-events-none rounded-b-lg z-10" />
+
             {/* Overlay Controls */}
             <div className={`absolute top-0 left-0 w-full p-4 flex justify-between pointer-events-none transition-opacity duration-300 ${isFocused || 'group-hover:opacity-100 opacity-0'}`}>
-                {/* Top Left: Hand/Pan Tool */}
                 <div className="pointer-events-auto">
                     {isFocused && (
                         <button
@@ -389,7 +382,6 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
                     )}
                 </div>
 
-                {/* Top Right: Reset View */}
                 <div className="pointer-events-auto">
                     <button 
                         onClick={resetView}
@@ -403,11 +395,15 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
             </div>
 
             {/* Instructions Overlay */}
-            <div className="absolute bottom-4 left-4 pointer-events-none text-xs text-sciblue-100 select-none bg-black/60 backdrop-blur-sm px-2 py-1 rounded border border-white/10 shadow-lg">
+            <div className="absolute bottom-4 left-4 pointer-events-none select-none z-20">
                 {isFocused ? (
-                    <p className="font-medium">{t.canvas.instructionsFocused}</p>
+                     <div className="text-xs text-sciblue-100 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10 shadow-lg animate-fade-in-up">
+                        <p className="font-medium">{t.canvas.instructionsFocused}</p>
+                     </div>
                 ) : (
-                    <p className="flex items-center gap-2"><MousePointer2 size={12}/> {t.canvas.instructionsIdle}</p>
+                    <div className="flex items-center gap-2 text-xs text-amber-400 font-bold tracking-wide animate-pulse">
+                        <MousePointer2 size={14}/> {t.canvas.instructionsIdle}
+                    </div>
                 )}
             </div>
         </div>

@@ -1,4 +1,5 @@
 
+
 export interface SimulationParams {
   L: number;       // Container side length
   N: number;       // Number of particles
@@ -63,8 +64,18 @@ export interface Translation {
     statsDuration: string;
     start: string;
     pause: string;
+    resume: string; // New: Resume button text
     reset: string;
     resetNote: string;
+    restoreDefaults: string;
+  };
+  messages: {
+    resetRequired: string;
+    resetSuccess: string;
+    alreadyLatest: string;
+    resetFailed: string;
+    pauseRequired: string;
+    checkInputs: string; 
   };
   views: {
     mdView: string;
@@ -80,13 +91,14 @@ export interface Translation {
     instEnergy: string;
     semilog: string;
     tempError: string;
-    totalEnergy: string; // New
+    totalEnergy: string;
+    distributions: string; 
     speedX: string;
     energyX: string;
     probY: string;
     timeX: string;
     errorY: string;
-    energyY: string; // New
+    energyY: string;
     theory: string;
     simulation: string;
   };
@@ -113,6 +125,7 @@ export interface Translation {
     instructionsIdle: string;
     scrollWarning: string;
     foldingLocked: string;
+    runningLocked: string;
   };
   common: {
     expandDetails: string;
@@ -120,6 +133,8 @@ export interface Translation {
     next: string;
     expandAll: string;
     collapse: string;
+    openCard: string;  // New: Generic open card tooltip
+    closeCard: string; // New: Generic close card tooltip
   };
   footer: {
     about: string;
@@ -129,7 +144,12 @@ export interface Translation {
     visitorCount: string;
     school: string;
     version: string;
-    // Roles
+    links: string;        
+    github: string;       
+    report: string;       
+    contact: string;      
+    acknowledgement: string; 
+    designedBy: string;   
     role_leader: string;
     role_algo: string;
     role_research: string;

@@ -71,32 +71,34 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
     return (
       <div className={containerClass}>
         <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{isFinal ? t.charts.avgSpeed : t.charts.instSpeed}</h4>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
-            <XAxis 
-              dataKey="val" 
-              tick={axisStyle}
-              tickLine={{ stroke: colors.axis }}
-              axisLine={{ stroke: colors.axis }}
-              tickFormatter={formatTick}
-              label={{ value: t.charts.speedX, position: 'insideBottom', offset: -10, ...labelStyle }}
-            />
-            <YAxis 
-               tick={axisStyle}
-               tickLine={{ stroke: colors.axis }}
-               axisLine={{ stroke: colors.axis }}
-               tickFormatter={formatTick}
-               domain={fixedDomain}
-               allowDataOverflow={true}
-               label={{ value: t.charts.probY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: colors.text, fontWeight: 500 }}/>
-            <Bar dataKey="probability" name={t.charts.simulation} fill={colors.simulation} opacity={0.9} barSize={10} isAnimationActive={false} radius={[2, 2, 0, 0]} />
-            <Line type="basis" dataKey="theoretical" name={t.charts.theory} stroke={colors.theory} strokeWidth={2} dot={false} isAnimationActive={false} />
-          </ComposedChart>
-        </ResponsiveContainer>
+        <div className="flex-1 min-h-0 w-full relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
+              <XAxis 
+                dataKey="val" 
+                tick={axisStyle}
+                tickLine={{ stroke: colors.axis }}
+                axisLine={{ stroke: colors.axis }}
+                tickFormatter={formatTick}
+                label={{ value: t.charts.speedX, position: 'insideBottom', offset: -10, ...labelStyle }}
+              />
+              <YAxis 
+                 tick={axisStyle}
+                 tickLine={{ stroke: colors.axis }}
+                 axisLine={{ stroke: colors.axis }}
+                 tickFormatter={formatTick}
+                 domain={fixedDomain}
+                 allowDataOverflow={true}
+                 label={{ value: t.charts.probY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: colors.text, fontWeight: 500 }}/>
+              <Bar dataKey="probability" name={t.charts.simulation} fill={colors.simulation} opacity={0.9} barSize={10} isAnimationActive={false} radius={[2, 2, 0, 0]} />
+              <Line type="basis" dataKey="theoretical" name={t.charts.theory} stroke={colors.theory} strokeWidth={2} dot={false} isAnimationActive={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     );
   }
@@ -114,32 +116,34 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
     return (
       <div className={containerClass}>
         <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{isFinal ? t.charts.avgEnergy : t.charts.instEnergy}</h4>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
-            <XAxis 
-              dataKey="val" 
-              tick={axisStyle}
-              tickLine={{ stroke: colors.axis }}
-              axisLine={{ stroke: colors.axis }}
-              tickFormatter={formatTick}
-              label={{ value: t.charts.energyX, position: 'insideBottom', offset: -10, ...labelStyle }}
-            />
-            <YAxis 
-               tick={axisStyle}
-               tickLine={{ stroke: colors.axis }}
-               axisLine={{ stroke: colors.axis }}
-               tickFormatter={formatTick} 
-               domain={fixedDomain}
-               allowDataOverflow={true}
-               label={{ value: t.charts.probY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: colors.text, fontWeight: 500 }}/>
-            <Bar dataKey="probability" name={t.charts.simulation} fill={colors.simulation} opacity={0.9} barSize={10} isAnimationActive={false} radius={[2, 2, 0, 0]} />
-            <Line type="basis" dataKey="theoretical" name={t.charts.theory} stroke={colors.theory} strokeWidth={2} dot={false} isAnimationActive={false} />
-          </ComposedChart>
-        </ResponsiveContainer>
+        <div className="flex-1 min-h-0 w-full relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
+              <XAxis 
+                dataKey="val" 
+                tick={axisStyle}
+                tickLine={{ stroke: colors.axis }}
+                axisLine={{ stroke: colors.axis }}
+                tickFormatter={formatTick}
+                label={{ value: t.charts.energyX, position: 'insideBottom', offset: -10, ...labelStyle }}
+              />
+              <YAxis 
+                 tick={axisStyle}
+                 tickLine={{ stroke: colors.axis }}
+                 axisLine={{ stroke: colors.axis }}
+                 tickFormatter={formatTick} 
+                 domain={fixedDomain}
+                 allowDataOverflow={true}
+                 label={{ value: t.charts.probY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: colors.text, fontWeight: 500 }}/>
+              <Bar dataKey="probability" name={t.charts.simulation} fill={colors.simulation} opacity={0.9} barSize={10} isAnimationActive={false} radius={[2, 2, 0, 0]} />
+              <Line type="basis" dataKey="theoretical" name={t.charts.theory} stroke={colors.theory} strokeWidth={2} dot={false} isAnimationActive={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     );
   }
@@ -148,55 +152,57 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
      return (
         <div className={containerClass}>
             <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{t.charts.semilog}</h4>
-            <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
-                    <XAxis 
-                        type="number" 
-                        dataKey="energy" 
-                        name="Energy" 
-                        tick={axisStyle}
-                        tickLine={{ stroke: colors.axis }}
-                        axisLine={{ stroke: colors.axis }}
-                        tickFormatter={formatTick}
-                        domain={['dataMin', 'dataMax']}
-                        label={{ value: t.charts.energyX, position: 'insideBottom', offset: -10, ...labelStyle }}
-                    />
-                    <YAxis 
-                        type="number" 
-                        dataKey="logProb" 
-                        name="ln(P)" 
-                        tick={axisStyle}
-                        tickLine={{ stroke: colors.axis }}
-                        axisLine={{ stroke: colors.axis }}
-                        tickFormatter={formatTick}
-                        domain={['auto', 'auto']}
-                        label={{ value: 'ln(P)', angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
-                    />
-                    <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip />} />
-                    <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: colors.text, fontWeight: 500 }}/>
-                    
-                    <Line 
-                        data={data.energyLog} 
-                        type="monotone" 
-                        dataKey="theoreticalLog" 
-                        name={t.charts.theory} 
-                        stroke={colors.theory} 
-                        strokeWidth={2} 
-                        dot={false} 
-                        isAnimationActive={false}
-                    />
-                    
-                    <Scatter 
-                        data={data.energyLog} 
-                        name={t.charts.simulation} 
-                        fill={colors.simulation} 
-                        shape="circle"
-                        line={false}
-                        isAnimationActive={false}
-                    />
-                </ComposedChart>
-            </ResponsiveContainer>
+            <div className="flex-1 min-h-0 w-full relative">
+              <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
+                      <XAxis 
+                          type="number" 
+                          dataKey="energy" 
+                          name="Energy" 
+                          tick={axisStyle}
+                          tickLine={{ stroke: colors.axis }}
+                          axisLine={{ stroke: colors.axis }}
+                          tickFormatter={formatTick}
+                          domain={['dataMin', 'dataMax']}
+                          label={{ value: t.charts.energyX, position: 'insideBottom', offset: -10, ...labelStyle }}
+                      />
+                      <YAxis 
+                          type="number" 
+                          dataKey="logProb" 
+                          name="ln(P)" 
+                          tick={axisStyle}
+                          tickLine={{ stroke: colors.axis }}
+                          axisLine={{ stroke: colors.axis }}
+                          tickFormatter={formatTick}
+                          domain={['auto', 'auto']}
+                          label={{ value: 'ln(P)', angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
+                      />
+                      <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip />} />
+                      <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: colors.text, fontWeight: 500 }}/>
+                      
+                      <Line 
+                          data={data.energyLog} 
+                          type="monotone" 
+                          dataKey="theoreticalLog" 
+                          name={t.charts.theory} 
+                          stroke={colors.theory} 
+                          strokeWidth={2} 
+                          dot={false} 
+                          isAnimationActive={false}
+                      />
+                      
+                      <Scatter 
+                          data={data.energyLog} 
+                          name={t.charts.simulation} 
+                          fill={colors.simulation} 
+                          shape="circle"
+                          line={false}
+                          isAnimationActive={false}
+                      />
+                  </ComposedChart>
+              </ResponsiveContainer>
+            </div>
         </div>
      )
   }
@@ -205,6 +211,39 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
       return (
         <div className={containerClass}>
             <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{t.charts.tempError}</h4>
+            <div className="flex-1 min-h-0 w-full relative">
+              <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={data.tempHistory} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
+                      <XAxis 
+                          dataKey="time" 
+                          tick={axisStyle}
+                          tickLine={{ stroke: colors.axis }}
+                          axisLine={{ stroke: colors.axis }}
+                          tickFormatter={formatTick}
+                          label={{ value: t.charts.timeX, position: 'insideBottom', offset: -10, ...labelStyle }}
+                      />
+                      <YAxis 
+                          tick={axisStyle}
+                          tickLine={{ stroke: colors.axis }}
+                          axisLine={{ stroke: colors.axis }}
+                          tickFormatter={formatTick}
+                          label={{ value: t.charts.errorY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area type="monotone" dataKey="error" stroke={colors.area} fill={colors.area} fillOpacity={0.1} strokeWidth={2} isAnimationActive={false} name={t.charts.tempError} />
+                  </AreaChart>
+              </ResponsiveContainer>
+            </div>
+        </div>
+      );
+  }
+
+  if (type === 'totalEnergy') {
+    return (
+      <div className={containerClass}>
+          <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{t.charts.totalEnergy}</h4>
+          <div className="flex-1 min-h-0 w-full relative">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data.tempHistory} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
@@ -221,43 +260,14 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
                         tickLine={{ stroke: colors.axis }}
                         axisLine={{ stroke: colors.axis }}
                         tickFormatter={formatTick}
-                        label={{ value: t.charts.errorY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
+                        domain={['auto', 'auto']}
+                        label={{ value: t.charts.energyY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    <Area type="monotone" dataKey="error" stroke={colors.area} fill={colors.area} fillOpacity={0.1} strokeWidth={2} isAnimationActive={false} name={t.charts.tempError} />
+                    <Area type="monotone" dataKey="totalEnergy" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} strokeWidth={2} isAnimationActive={false} name={t.charts.totalEnergy} />
                 </AreaChart>
             </ResponsiveContainer>
-        </div>
-      );
-  }
-
-  if (type === 'totalEnergy') {
-    return (
-      <div className={containerClass}>
-          <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{t.charts.totalEnergy}</h4>
-          <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.tempHistory} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
-                  <XAxis 
-                      dataKey="time" 
-                      tick={axisStyle}
-                      tickLine={{ stroke: colors.axis }}
-                      axisLine={{ stroke: colors.axis }}
-                      tickFormatter={formatTick}
-                      label={{ value: t.charts.timeX, position: 'insideBottom', offset: -10, ...labelStyle }}
-                  />
-                  <YAxis 
-                      tick={axisStyle}
-                      tickLine={{ stroke: colors.axis }}
-                      axisLine={{ stroke: colors.axis }}
-                      tickFormatter={formatTick}
-                      domain={['auto', 'auto']}
-                      label={{ value: t.charts.energyY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="totalEnergy" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} strokeWidth={2} isAnimationActive={false} name={t.charts.totalEnergy} />
-              </AreaChart>
-          </ResponsiveContainer>
+          </div>
       </div>
     );
 }

@@ -20,10 +20,10 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
   const [dragOffset, setDragOffset] = useState(0);
 
   // --- HEIGHT MANAGEMENT ---
-  // In Card Mode: Compact heights (160px) to prevent overflow when stacking 2 charts
+  // In Card Mode: Compact heights to prevent overflow (container is now ~380px)
   // In Fullscreen Mode: Generous heights
-  const histHeight = isFullscreen ? "h-[320px]" : "h-[160px]"; 
-  const singleHeight = isFullscreen ? "h-[400px]" : "h-[260px]";
+  const histHeight = isFullscreen ? "h-[320px]" : "h-[140px]"; 
+  const singleHeight = isFullscreen ? "h-[400px]" : "h-[200px]";
 
   // Group 1: Histograms (Speed + Energy)
   const HistogramGroup = () => (
@@ -38,10 +38,10 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
   );
 
   const cardGroups = [
-    { id: 'histograms', content: <HistogramGroup />, title: "Distributions" },
-    { id: 'semilog', content: <DistributionCharts data={data} type="semilog" isFinal={true} t={t} heightClass={singleHeight} />, title: "Semi-Log Plot" },
-    { id: 'totalEnergy', content: <DistributionCharts data={data} type="totalEnergy" t={t} heightClass={singleHeight} />, title: "Total Energy" },
-    { id: 'tempError', content: <DistributionCharts data={data} type="tempError" t={t} heightClass={singleHeight} />, title: "Temperature Error" },
+    { id: 'histograms', content: <HistogramGroup />, title: t.charts.distributions },
+    { id: 'semilog', content: <DistributionCharts data={data} type="semilog" isFinal={true} t={t} heightClass={singleHeight} />, title: t.charts.semilog },
+    { id: 'totalEnergy', content: <DistributionCharts data={data} type="totalEnergy" t={t} heightClass={singleHeight} />, title: t.charts.totalEnergy },
+    { id: 'tempError', content: <DistributionCharts data={data} type="tempError" t={t} heightClass={singleHeight} />, title: t.charts.tempError },
   ];
 
   const handleNext = () => {
@@ -175,7 +175,7 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
   return (
     <div 
         ref={containerRef} 
-        className={`relative transition-all duration-500 bg-slate-100 ${isFullscreen ? 'p-10 overflow-y-auto' : 'h-[500px] perspective-[1000px] select-none'}`}
+        className={`relative transition-all duration-500 bg-slate-100 ${isFullscreen ? 'p-10 overflow-y-auto' : 'h-[380px] perspective-[1000px] select-none'}`}
     >
         <button 
             onClick={toggleFullscreen}
@@ -211,15 +211,15 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
                 {cardGroups.map((group, index) => (
                     <div
                         key={group.id}
-                        className="absolute w-full max-w-3xl h-[420px] bg-white/80 backdrop-blur-xl border border-white/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
+                        className="absolute w-full max-w-3xl h-[340px] bg-white/80 backdrop-blur-xl border border-white/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
                         style={getCardStyle(index)}
                     >
-                        <div className="h-8 w-full flex items-center justify-center cursor-ns-resize opacity-50 hover:opacity-100 border-b border-slate-100">
+                        <div className="h-8 w-full flex items-center justify-center cursor-ns-resize opacity-50 hover:opacity-100 border-b border-slate-100 shrink-0">
                              <div className="w-12 h-1 bg-slate-300 rounded-full"></div>
                         </div>
-                        <div className="flex-1 p-4 relative">
-                             <div className="absolute top-2 left-4 text-xs font-bold text-slate-400 uppercase tracking-widest">{group.title}</div>
-                             <div className="mt-6 h-full">
+                        <div className="flex-1 p-4 relative flex flex-col min-h-0">
+                             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 select-none">{group.title}</div>
+                             <div className="flex-1 min-h-0 w-full relative">
                                 {group.content}
                              </div>
                         </div>
