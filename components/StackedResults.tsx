@@ -19,23 +19,29 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
   const currentY = useRef(0);
   const [dragOffset, setDragOffset] = useState(0);
 
-  // Group 1: Histograms (Speed + Energy) - Combined in one view
+  // --- HEIGHT MANAGEMENT ---
+  // In Card Mode: Compact heights (160px) to prevent overflow when stacking 2 charts
+  // In Fullscreen Mode: Generous heights
+  const histHeight = isFullscreen ? "h-[320px]" : "h-[160px]"; 
+  const singleHeight = isFullscreen ? "h-[400px]" : "h-[260px]";
+
+  // Group 1: Histograms (Speed + Energy)
   const HistogramGroup = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-y-auto p-2">
-      <div className="bg-slate-50/50 rounded-xl p-3 border border-slate-200">
-         <DistributionCharts data={data} type="speed" isFinal={true} t={t} />
+    <div className={`grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 p-1 md:p-2 ${isFullscreen ? '' : 'h-full overflow-y-auto'}`}>
+      <div className="bg-slate-50/50 rounded-xl p-2 md:p-3 border border-slate-200">
+         <DistributionCharts data={data} type="speed" isFinal={true} t={t} heightClass={histHeight} />
       </div>
-      <div className="bg-slate-50/50 rounded-xl p-3 border border-slate-200">
-         <DistributionCharts data={data} type="energy" isFinal={true} t={t} />
+      <div className="bg-slate-50/50 rounded-xl p-2 md:p-3 border border-slate-200">
+         <DistributionCharts data={data} type="energy" isFinal={true} t={t} heightClass={histHeight} />
       </div>
     </div>
   );
 
   const cardGroups = [
     { id: 'histograms', content: <HistogramGroup />, title: "Distributions" },
-    { id: 'semilog', content: <DistributionCharts data={data} type="semilog" isFinal={true} t={t} />, title: "Semi-Log Plot" },
-    { id: 'totalEnergy', content: <DistributionCharts data={data} type="totalEnergy" t={t} />, title: "Total Energy" },
-    { id: 'tempError', content: <DistributionCharts data={data} type="tempError" t={t} />, title: "Temperature Error" },
+    { id: 'semilog', content: <DistributionCharts data={data} type="semilog" isFinal={true} t={t} heightClass={singleHeight} />, title: "Semi-Log Plot" },
+    { id: 'totalEnergy', content: <DistributionCharts data={data} type="totalEnergy" t={t} heightClass={singleHeight} />, title: "Total Energy" },
+    { id: 'tempError', content: <DistributionCharts data={data} type="tempError" t={t} heightClass={singleHeight} />, title: "Temperature Error" },
   ];
 
   const handleNext = () => {

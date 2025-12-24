@@ -175,10 +175,10 @@ function App() {
       </div>
 
       {/* HEADER LOGO (Top Left) */}
-      <div className="absolute top-6 left-6 z-50 animate-fade-in-down group cursor-default">
+      <div className="absolute top-4 left-4 md:top-6 md:left-6 z-50 animate-fade-in-down group cursor-default">
          <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm pr-4 pl-2 py-1.5 rounded-full border border-white/40 shadow-sm hover:bg-white/80 transition-all">
             {/* No Image File Dependency: Using Vector Icon */}
-            <div className="w-10 h-10 rounded-full bg-sciblue-50 flex items-center justify-center border border-sciblue-100 shadow-inner group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500 ease-out">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-sciblue-50 flex items-center justify-center border border-sciblue-100 shadow-inner group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500 ease-out">
                 <Atom size={20} className="text-sciblue-600" />
             </div>
             
@@ -218,7 +218,7 @@ function App() {
       </div>
 
       {/* Language Menu */}
-      <div className="absolute top-6 right-6 z-50">
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-50">
         <div className="group relative">
             <button className="flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm text-slate-600 rounded-full border border-slate-200 shadow-sm hover:shadow-md transition-all hover:text-sciblue-600 active:scale-95">
                 <Globe size={16} />
@@ -245,105 +245,106 @@ function App() {
         </div>
       </div>
 
-      {/* Hero Header */}
-      <header className="pt-24 pb-12 px-6 max-w-7xl mx-auto text-center animate-fade-in-down relative z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sciblue-50/80 backdrop-blur-sm text-sciblue-600 text-[10px] font-bold tracking-widest uppercase mb-6 border border-sciblue-200 shadow-sm">
+      {/* Hero Header - Adjusted padding for mobile landscape */}
+      <header className="pt-20 pb-8 md:pt-24 md:pb-12 px-6 max-w-7xl mx-auto text-center animate-fade-in-down relative z-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sciblue-50/80 backdrop-blur-sm text-sciblue-600 text-[10px] font-bold tracking-widest uppercase mb-4 md:mb-6 border border-sciblue-200 shadow-sm">
              Physics Simulation v1.0
         </div>
-        <h1 className="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight">
+        <h1 className="text-3xl md:text-4xl lg:text-6xl font-extrabold mb-3 md:mb-4 tracking-tight">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-800 via-sciblue-600 to-slate-800 bg-[length:200%_auto] animate-shimmer drop-shadow-sm">
             {t.title}
           </span>
         </h1>
-        <p className="text-slate-500 text-sm md:text-lg font-medium tracking-wide max-w-2xl mx-auto leading-relaxed">
+        <p className="text-slate-500 text-xs md:text-sm lg:text-lg font-medium tracking-wide max-w-2xl mx-auto leading-relaxed">
           {t.subtitle}
         </p>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow relative z-10">
+      {/* Main Grid: Changed lg:grid-cols-12 to md:grid-cols-12 to trigger side-by-side on mobile landscape */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 flex-grow relative z-10">
         
-        {/* Left Column: Controls */}
-        <aside className="lg:col-span-3 space-y-6">
-            <div className="sticky top-6 space-y-6">
+        {/* Left Column: Controls - Span 4 on MD (Mobile Landscape) */}
+        <aside className="md:col-span-4 lg:col-span-3 space-y-4 md:space-y-6">
+            <div className="sticky top-20 md:top-6 space-y-4 md:space-y-6">
               
               <CollapsibleCard title={t.controls.title} icon={<Settings2 size={18}/>} defaultExpanded={true} t={t}>
-                <div className="space-y-5">
+                <div className="space-y-4 md:space-y-5">
                   {/* Params Inputs */}
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                      <div className="group">
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-2 tracking-wider">{t.controls.particles}</label>
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1 md:mb-2 tracking-wider">{t.controls.particles}</label>
                         <input 
                           type="number" 
                           value={params.N}
                           onChange={(e) => setParams({...params, N: Number(e.target.value)})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
                         />
                      </div>
                      <div>
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-2 tracking-wider">{t.controls.radius}</label>
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1 md:mb-2 tracking-wider">{t.controls.radius}</label>
                         <input 
                           type="number" step="0.05"
                           value={params.r}
                           onChange={(e) => setParams({...params, r: Number(e.target.value)})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
                         />
                      </div>
                      <div>
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-2 tracking-wider">{t.controls.boxSize}</label>
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1 md:mb-2 tracking-wider">{t.controls.boxSize}</label>
                         <input 
                           type="number" 
                           value={params.L}
                           onChange={(e) => setParams({...params, L: Number(e.target.value)})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
                         />
                      </div>
                      <div className="pt-2 border-t border-slate-100"></div>
                      <div>
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-2 tracking-wider">{t.controls.equilTime}</label>
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1 md:mb-2 tracking-wider">{t.controls.equilTime}</label>
                         <input 
                           type="number" 
                           value={params.equilibriumTime}
                           onChange={(e) => setParams({...params, equilibriumTime: Number(e.target.value)})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
                         />
                      </div>
                      <div>
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-2 tracking-wider">{t.controls.statsDuration}</label>
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1 md:mb-2 tracking-wider">{t.controls.statsDuration}</label>
                         <input 
                           type="number" 
                           value={params.statsDuration}
                           onChange={(e) => setParams({...params, statsDuration: Number(e.target.value)})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 font-mono focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500 outline-none transition-all hover:bg-white"
                         />
                      </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-col gap-3 pt-4">
+                  <div className="flex flex-col gap-2 md:gap-3 pt-2 md:pt-4">
                      {!isRunning ? (
                        <button 
                          onClick={() => setIsRunning(true)}
-                         className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-slate-200"
+                         className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 md:py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-slate-200 text-sm md:text-base"
                        >
-                         <Play size={18} fill="currentColor" /> {t.controls.start}
+                         <Play size={16} fill="currentColor" /> {t.controls.start}
                        </button>
                      ) : (
                        <button 
                          onClick={() => setIsRunning(false)}
-                         className="w-full bg-amber-500 hover:bg-amber-400 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-amber-200"
+                         className="w-full bg-amber-500 hover:bg-amber-400 text-white font-bold py-2.5 md:py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-amber-200 text-sm md:text-base"
                        >
-                         <Pause size={18} fill="currentColor" /> {t.controls.pause}
+                         <Pause size={16} fill="currentColor" /> {t.controls.pause}
                        </button>
                      )}
                      
                      <button 
                        onClick={handleReset}
-                       className="w-full bg-white hover:bg-slate-50 text-slate-600 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 border border-slate-200 shadow-sm"
+                       className="w-full bg-white hover:bg-slate-50 text-slate-600 font-bold py-2.5 md:py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 border border-slate-200 shadow-sm text-sm md:text-base"
                      >
-                       <RotateCcw size={18} /> {t.controls.reset}
+                       <RotateCcw size={16} /> {t.controls.reset}
                      </button>
                      
-                     <p className="text-[10px] text-center text-slate-400 mt-2 font-medium tracking-wide">
+                     <p className="text-[10px] text-center text-slate-400 mt-1 md:mt-2 font-medium tracking-wide">
                         {t.controls.resetNote}
                      </p>
                   </div>
@@ -352,8 +353,8 @@ function App() {
             </div>
         </aside>
 
-        {/* Center/Right Column: Visualization & Charts */}
-        <div className="lg:col-span-9 space-y-6">
+        {/* Center/Right Column: Visualization & Charts - Span 8 on MD (Mobile Landscape) */}
+        <div className="md:col-span-8 lg:col-span-9 space-y-4 md:space-y-6">
             
             {/* 3D View */}
             <CollapsibleCard 
@@ -384,11 +385,11 @@ function App() {
             {!finalChartData ? (
                 // Phase 1: Realtime Charts
                 <CollapsibleCard title={t.views.realtimeCharts} icon={<Activity size={18}/>} t={t}>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="bg-white rounded-xl p-4 border border-slate-100">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                      <div className="bg-white rounded-xl p-3 md:p-4 border border-slate-100">
                          <DistributionCharts data={chartData} type="speed" t={t} />
                       </div>
-                      <div className="bg-white rounded-xl p-4 border border-slate-100">
+                      <div className="bg-white rounded-xl p-3 md:p-4 border border-slate-100">
                          <DistributionCharts data={chartData} type="energy" t={t} />
                       </div>
                    </div>

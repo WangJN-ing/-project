@@ -9,12 +9,13 @@ interface ChartProps {
   type: 'speed' | 'energy' | 'semilog' | 'tempError' | 'totalEnergy';
   isFinal?: boolean;
   t: Translation;
+  heightClass?: string; // Allow custom height
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white border border-slate-200 p-3 rounded-lg shadow-xl text-xs backdrop-blur-none">
+      <div className="bg-white border border-slate-200 p-3 rounded-lg shadow-xl text-xs backdrop-blur-none z-50 relative">
         <p className="font-serif font-bold mb-2 text-slate-900 border-b border-slate-100 pb-1">{label}</p>
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2 mb-1">
@@ -29,8 +30,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false, t }) => {
-  const chartHeight = 250;
+const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false, t, heightClass = "h-[220px]" }) => {
+  const containerClass = `w-full ${heightClass} flex flex-col`;
   
   // Academic Color Palette
   const colors = {
@@ -68,10 +69,10 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
     }));
 
     return (
-      <div className="w-full h-[300px] flex flex-col">
-        <h4 className="text-center text-sm font-bold text-slate-800 mb-4 tracking-tight">{isFinal ? t.charts.avgSpeed : t.charts.instSpeed}</h4>
+      <div className={containerClass}>
+        <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{isFinal ? t.charts.avgSpeed : t.charts.instSpeed}</h4>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 25 }}>
+          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
             <XAxis 
               dataKey="val" 
@@ -79,7 +80,7 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
               tickLine={{ stroke: colors.axis }}
               axisLine={{ stroke: colors.axis }}
               tickFormatter={formatTick}
-              label={{ value: t.charts.speedX, position: 'insideBottom', offset: -15, ...labelStyle }}
+              label={{ value: t.charts.speedX, position: 'insideBottom', offset: -10, ...labelStyle }}
             />
             <YAxis 
                tick={axisStyle}
@@ -88,7 +89,7 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
                tickFormatter={formatTick}
                domain={fixedDomain}
                allowDataOverflow={true}
-               label={{ value: t.charts.probY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 0 }}
+               label={{ value: t.charts.probY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: colors.text, fontWeight: 500 }}/>
@@ -111,10 +112,10 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
     }));
 
     return (
-      <div className="w-full h-[300px] flex flex-col">
-        <h4 className="text-center text-sm font-bold text-slate-800 mb-4 tracking-tight">{isFinal ? t.charts.avgEnergy : t.charts.instEnergy}</h4>
+      <div className={containerClass}>
+        <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{isFinal ? t.charts.avgEnergy : t.charts.instEnergy}</h4>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 25 }}>
+          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
             <XAxis 
               dataKey="val" 
@@ -122,7 +123,7 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
               tickLine={{ stroke: colors.axis }}
               axisLine={{ stroke: colors.axis }}
               tickFormatter={formatTick}
-              label={{ value: t.charts.energyX, position: 'insideBottom', offset: -15, ...labelStyle }}
+              label={{ value: t.charts.energyX, position: 'insideBottom', offset: -10, ...labelStyle }}
             />
             <YAxis 
                tick={axisStyle}
@@ -131,7 +132,7 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
                tickFormatter={formatTick} 
                domain={fixedDomain}
                allowDataOverflow={true}
-               label={{ value: t.charts.probY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 0 }}
+               label={{ value: t.charts.probY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: colors.text, fontWeight: 500 }}/>
@@ -145,10 +146,10 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
 
   if (type === 'semilog') {
      return (
-        <div className="w-full h-[300px] flex flex-col">
-            <h4 className="text-center text-sm font-bold text-slate-800 mb-4 tracking-tight">{t.charts.semilog}</h4>
+        <div className={containerClass}>
+            <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{t.charts.semilog}</h4>
             <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart margin={{ top: 10, right: 20, left: 10, bottom: 25 }}>
+                <ComposedChart margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
                     <XAxis 
                         type="number" 
@@ -159,7 +160,7 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
                         axisLine={{ stroke: colors.axis }}
                         tickFormatter={formatTick}
                         domain={['dataMin', 'dataMax']}
-                        label={{ value: t.charts.energyX, position: 'insideBottom', offset: -15, ...labelStyle }}
+                        label={{ value: t.charts.energyX, position: 'insideBottom', offset: -10, ...labelStyle }}
                     />
                     <YAxis 
                         type="number" 
@@ -170,7 +171,7 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
                         axisLine={{ stroke: colors.axis }}
                         tickFormatter={formatTick}
                         domain={['auto', 'auto']}
-                        label={{ value: 'ln(P)', angle: -90, position: 'insideLeft', ...labelStyle, offset: 0 }}
+                        label={{ value: 'ln(P)', angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
                     />
                     <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip />} />
                     <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: colors.text, fontWeight: 500 }}/>
@@ -202,10 +203,10 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
 
   if (type === 'tempError') {
       return (
-        <div className="w-full h-[300px] flex flex-col">
-            <h4 className="text-center text-sm font-bold text-slate-800 mb-4 tracking-tight">{t.charts.tempError}</h4>
+        <div className={containerClass}>
+            <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{t.charts.tempError}</h4>
             <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.tempHistory} margin={{ top: 10, right: 20, left: 10, bottom: 25 }}>
+                <AreaChart data={data.tempHistory} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
                     <XAxis 
                         dataKey="time" 
@@ -213,14 +214,14 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
                         tickLine={{ stroke: colors.axis }}
                         axisLine={{ stroke: colors.axis }}
                         tickFormatter={formatTick}
-                        label={{ value: t.charts.timeX, position: 'insideBottom', offset: -15, ...labelStyle }}
+                        label={{ value: t.charts.timeX, position: 'insideBottom', offset: -10, ...labelStyle }}
                     />
                     <YAxis 
                         tick={axisStyle}
                         tickLine={{ stroke: colors.axis }}
                         axisLine={{ stroke: colors.axis }}
                         tickFormatter={formatTick}
-                        label={{ value: t.charts.errorY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 0 }}
+                        label={{ value: t.charts.errorY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Area type="monotone" dataKey="error" stroke={colors.area} fill={colors.area} fillOpacity={0.1} strokeWidth={2} isAnimationActive={false} name={t.charts.tempError} />
@@ -232,10 +233,10 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
 
   if (type === 'totalEnergy') {
     return (
-      <div className="w-full h-[300px] flex flex-col">
-          <h4 className="text-center text-sm font-bold text-slate-800 mb-4 tracking-tight">{t.charts.totalEnergy}</h4>
+      <div className={containerClass}>
+          <h4 className="text-center text-sm font-bold text-slate-800 mb-2 tracking-tight">{t.charts.totalEnergy}</h4>
           <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.tempHistory} margin={{ top: 10, right: 20, left: 10, bottom: 25 }}>
+              <AreaChart data={data.tempHistory} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
                   <XAxis 
                       dataKey="time" 
@@ -243,7 +244,7 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
                       tickLine={{ stroke: colors.axis }}
                       axisLine={{ stroke: colors.axis }}
                       tickFormatter={formatTick}
-                      label={{ value: t.charts.timeX, position: 'insideBottom', offset: -15, ...labelStyle }}
+                      label={{ value: t.charts.timeX, position: 'insideBottom', offset: -10, ...labelStyle }}
                   />
                   <YAxis 
                       tick={axisStyle}
@@ -251,7 +252,7 @@ const DistributionCharts: React.FC<ChartProps> = ({ data, type, isFinal = false,
                       axisLine={{ stroke: colors.axis }}
                       tickFormatter={formatTick}
                       domain={['auto', 'auto']}
-                      label={{ value: t.charts.energyY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 0 }}
+                      label={{ value: t.charts.energyY, angle: -90, position: 'insideLeft', ...labelStyle, offset: 5 }}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Area type="monotone" dataKey="totalEnergy" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} strokeWidth={2} isAnimationActive={false} name={t.charts.totalEnergy} />

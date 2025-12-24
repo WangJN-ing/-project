@@ -53,12 +53,12 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
       `}
     >
       <div 
-        className={`p-5 flex items-center justify-between cursor-pointer bg-white hover:bg-slate-50/50 transition-colors border-b border-slate-100 ${isLocked ? 'cursor-not-allowed opacity-80' : ''}`}
+        className={`p-4 md:p-5 flex items-center justify-between cursor-pointer bg-white hover:bg-slate-50/50 transition-colors border-b border-slate-100 ${isLocked ? 'cursor-not-allowed opacity-80' : ''}`}
         onClick={handleToggle}
       >
         <div className="flex items-center gap-3">
           {icon && <span className="text-slate-500 bg-slate-100 p-2 rounded-lg">{icon}</span>}
-          <h3 className="font-bold text-slate-800 tracking-tight text-base">{title}</h3>
+          <h3 className="font-bold text-slate-800 tracking-tight text-sm md:text-base">{title}</h3>
         </div>
         <div className="flex items-center gap-4">
           {extraHeader}
@@ -73,14 +73,14 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
           isExpanded ? 'max-h-[1200px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {children}
         </div>
       </div>
       
       {!isExpanded && (
         <div 
-            className="h-10 flex items-center justify-center text-slate-400 text-xs font-medium bg-slate-50/50 cursor-pointer hover:bg-slate-100 hover:text-sciblue-600 transition-colors border-t border-slate-100 tracking-wide uppercase"
+            className="h-9 md:h-10 flex items-center justify-center text-slate-400 text-xs font-medium bg-slate-50/50 cursor-pointer hover:bg-slate-100 hover:text-sciblue-600 transition-colors border-t border-slate-100 tracking-wide uppercase"
             onClick={handleToggle}
         >
             <span className="flex items-center gap-2">
