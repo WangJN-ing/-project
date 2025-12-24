@@ -133,6 +133,7 @@ const Footer: React.FC<FooterProps> = ({ t }) => {
                 href="/Project_Report.pdf" 
                 target="_blank" 
                 rel="noopener noreferrer" 
+                download="Project_Report.pdf"
                 className="flex items-center gap-2 text-sm text-slate-600 hover:text-sciblue-600 transition-colors group p-2 hover:bg-white rounded-lg -ml-2"
               >
                   <div className="p-1.5 bg-white border border-slate-200 rounded-md shadow-sm group-hover:border-sciblue-200 group-hover:text-sciblue-500 group-hover:scale-110 transition-all">
