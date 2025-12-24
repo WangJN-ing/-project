@@ -21,16 +21,20 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
 
   // --- HEIGHT MANAGEMENT ---
   // Optimized heights for mobile visibility
-  // Mobile Card Height: Increased to h-[600px] to fully show stacked charts
+  // Mobile Portrait: Taller (h-[600px]) to stack charts vertically.
+  // Mobile Landscape: Shorter (h-[340px]) but wider layout to fit screen.
   
   // Chart container heights inside the cards
-  // Increased mobile chart height from 200px to 250px for better readability
-  const histHeight = isFullscreen ? "h-[320px]" : "h-[250px] md:h-[160px]"; 
-  const singleHeight = isFullscreen ? "h-[450px]" : "h-[420px] md:h-[260px]";
+  // Portrait: 250px (Tall)
+  // Landscape: 130px (Compact, side-by-side)
+  // Desktop: 160px
+  const histHeight = isFullscreen ? "h-[320px]" : "h-[250px] landscape:h-[130px] md:h-[160px]"; 
+  const singleHeight = isFullscreen ? "h-[450px]" : "h-[420px] landscape:h-[260px] md:h-[260px]";
 
   // Group 1: Histograms (Speed + Energy) - Compact Grid
+  // Mobile Landscape: Force grid-cols-2 (side-by-side) to save vertical space
   const HistogramGroup = () => (
-    <div className={`grid grid-cols-1 md:grid-cols-2 gap-2 h-full ${isFullscreen ? 'p-4' : 'p-0 overflow-y-hidden'}`}>
+    <div className={`grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 gap-2 h-full ${isFullscreen ? 'p-4' : 'p-0 overflow-y-hidden'}`}>
       <div className="bg-slate-50 rounded-lg p-2 border border-slate-100 flex flex-col justify-center">
          <DistributionCharts data={data} type="speed" isFinal={true} t={t} heightClass={histHeight} />
       </div>
@@ -178,8 +182,9 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
   return (
     <div 
         ref={containerRef} 
-        // Increased container height on mobile to accommodate taller cards (h-[660px] on mobile)
-        className={`relative transition-all duration-500 bg-white ${isFullscreen ? 'p-10 overflow-y-auto' : 'h-[660px] md:h-[400px] perspective-[1000px] select-none'}`}
+        // Landscape Optimization: h-[340px] for mobile landscape (usually ~360-400px height)
+        // Mobile Portrait: h-[660px]
+        className={`relative transition-all duration-500 bg-white ${isFullscreen ? 'p-10 overflow-y-auto' : 'h-[660px] landscape:h-[340px] md:h-[400px] perspective-[1000px] select-none'}`}
     >
         <button 
             onClick={toggleFullscreen}
@@ -214,8 +219,8 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
                 {cardGroups.map((group, index) => (
                     <div
                         key={group.id}
-                        // Mobile Card Height: Increased to h-[600px] to allow full visibility of stacked charts
-                        className="absolute w-full max-w-4xl h-[600px] md:h-[360px] bg-white border border-slate-200 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
+                        // Mobile Landscape Card: Adjusted to h-[300px] to fit within the h-[340px] container with margins
+                        className="absolute w-full max-w-4xl h-[600px] landscape:h-[300px] md:h-[360px] bg-white border border-slate-200 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
                         style={getCardStyle(index)}
                     >
                         <div className="h-6 w-full flex items-center justify-center cursor-ns-resize opacity-30 hover:opacity-60 shrink-0">
@@ -230,9 +235,15 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
                     </div>
                 ))}
 
-                {/* Navigation Buttons - Updated to match Desktop Style everywhere */}
+                {/* Navigation Buttons */}
+                {/* 
+                   Portrait Mobile: Bottom Center, Horizontal (flex-row).
+                   Landscape Mobile: Right Center, Vertical (flex-col) - Mimics Desktop behavior to save vertical space.
+                   Desktop: Right Center, Vertical.
+                */}
                 <div className="absolute z-20 pointer-events-none flex 
                     bottom-4 left-1/2 -translate-x-1/2 flex-row gap-8
+                    landscape:top-1/2 landscape:right-4 landscape:bottom-auto landscape:left-auto landscape:translate-x-0 landscape:-translate-y-1/2 landscape:flex-col landscape:gap-2
                     md:top-1/2 md:right-4 md:bottom-auto md:left-auto md:translate-x-0 md:-translate-y-1/2 md:flex-col md:gap-2"
                 >
                      <button 

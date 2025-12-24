@@ -365,17 +365,18 @@ function App() {
       <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative flex flex-col z-0 scroll-smooth">
         
         {/* Modern Header Area */}
-        <header className="pt-20 pb-4 md:pt-24 md:pb-6 px-6 max-w-4xl mx-auto text-center animate-fade-in w-full shrink-0">
+        {/* Landscape Optimization: Reduced top/bottom padding to maximize vertical space */}
+        <header className="pt-20 pb-4 landscape:pt-6 landscape:pb-1 md:pt-24 md:pb-6 px-6 max-w-4xl mx-auto text-center animate-fade-in w-full shrink-0">
             {/* Version Badge - Centered Above Title */}
-            <div className="flex justify-center mb-5">
+            <div className="flex justify-center mb-5 landscape:mb-2">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-slate-200 text-slate-500 text-[10px] font-bold tracking-[0.2em] uppercase shadow-sm ring-1 ring-slate-100">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
                     {t.header.systemOp} · v1.2
                 </div>
             </div>
             
-            {/* Metallic Title with CSS Animation */}
-            <h1 className="text-4xl md:text-6xl font-serif font-black mb-4 tracking-tight text-metallic">
+            {/* Metallic Title with CSS Animation - Smaller text in landscape */}
+            <h1 className="text-4xl landscape:text-3xl md:text-6xl font-serif font-black mb-4 landscape:mb-1 tracking-tight text-metallic">
                 {t.title}
             </h1>
             
@@ -385,7 +386,7 @@ function App() {
         </header>
 
         {/* Content Container */}
-        <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-10 space-y-6">
+        <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-10 landscape:pb-4 space-y-6">
             
             {/* 3D View Card */}
             <CollapsibleCard 
