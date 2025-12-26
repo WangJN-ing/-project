@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun, ArrowLeft, Save, Download, Trash2, Archive, Pencil, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun, ArrowLeft, Save, Download, Trash2, Archive, Pencil, ShieldCheck, ChevronDown, LogOut, Info } from 'lucide-react';
 import { PhysicsEngine } from './services/PhysicsEngine';
 import { SimulationParams, SimulationStats, ChartData, LanguageCode, SavedConfig } from './types';
 import { translations } from './services/translations';
@@ -66,7 +66,8 @@ function App() {
   // Interaction State
   const [isCanvasLocked, setIsCanvasLocked] = useState(false);
   
-  const [notification, setNotification] = useState<{text: string, visible: boolean, type?: 'info'|'success'|'warning'}>({ text: '', visible: false, type: 'info' });
+  // Notification State with unique ID for animation resetting
+  const [notification, setNotification] = useState<{text: string, visible: boolean, type?: 'info'|'success'|'warning', id: number}>({ text: '', visible: false, type: 'info', id: 0 });
   const notificationTimeoutRef = useRef<number>(0);
 
   // Visitor Counter
@@ -84,6 +85,20 @@ function App() {
       params: DEFAULT_PARAMS,
       date: 0,
       isSystem: true
+  };
+
+  const showNotification = (text: string, duration = 1500, type: 'info'|'success'|'warning' = 'info') => {
+    // Clear existing timer to prevent premature closing of new notification
+    if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
+    
+    // Use Date.now() as a unique ID.
+    // When ID changes, React re-mounts the component (via key prop), forcing the CSS animation to replay instantly.
+    const newId = Date.now();
+    setNotification({ text, visible: true, type, id: newId });
+
+    notificationTimeoutRef.current = window.setTimeout(() => {
+        setNotification(prev => ({ ...prev, visible: false }));
+    }, duration);
   };
 
   // Dark Mode Logic
@@ -105,9 +120,11 @@ function App() {
       if (newMode) {
           document.documentElement.classList.add('dark');
           localStorage.setItem('theme', 'dark');
+          showNotification(t.common.modeDark, 1500, 'success');
       } else {
           document.documentElement.classList.remove('dark');
           localStorage.setItem('theme', 'light');
+          showNotification(t.common.modeLight, 1500, 'success');
       }
   };
 
@@ -191,14 +208,6 @@ function App() {
         setTimeout(() => setShowVisitorToast(false), 6000);
     }, 1500);
   }, []); 
-
-  const showNotification = (text: string, duration = 1500, type: 'info'|'success'|'warning' = 'info') => {
-    setNotification({ text, visible: true, type });
-    if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
-    notificationTimeoutRef.current = window.setTimeout(() => {
-        setNotification(prev => ({ ...prev, visible: false }));
-    }, duration);
-  };
 
   // --- Interaction Checker ---
   const checkInteractionLock = (e?: React.MouseEvent) => {
@@ -377,6 +386,23 @@ function App() {
       setIsSidebarOpen(false);
   }
 
+  const getLangName = (l: string) => {
+    switch(l) {
+        case 'zh-CN': return '简体中文';
+        case 'zh-TW': return '繁體中文';
+        case 'en-GB': return 'English (UK)';
+        case 'en-US': return 'English (US)';
+        default: return l;
+    }
+  };
+
+  const handleLangChange = (l: LanguageCode) => {
+      if (lang !== l) {
+          setLang(l);
+          showNotification(getLangName(l), 1500, 'success');
+      }
+  };
+
   const tick = useCallback(() => {
     if (!engineRef.current || !isRunning) return;
     
@@ -429,7 +455,7 @@ function App() {
       {/* GLOBAL INTERACTION LOCK BACKDROP - z-[90] */}
       {isCanvasLocked && (
         <div 
-            className="fixed inset-0 z-[90] bg-black/0 cursor-crosshair" 
+            className="fixed inset-0 z-[90] bg-black/10 cursor-crosshair backdrop-blur-[1px]" 
             onClick={(e) => {
                 e.stopPropagation();
                 setIsCanvasLocked(false);
@@ -721,9 +747,9 @@ function App() {
             <div className={`${isCanvasLocked ? 'relative z-[100]' : ''}`}>
                 <CollapsibleCard 
                 title={t.views.mdView} icon={<Box size={18} className="text-sciblue-600 dark:text-sciblue-400"/>} t={t}
-                isLocked={isCanvasLocked} // Only locked by interaction mode
-                lockedWarningText={t.canvas.foldingLocked} 
-                showNotification={showNotification}
+                isLocked={isCanvasLocked || isRunning} // Locked during interaction OR running
+                lockedWarningText={isRunning ? t.canvas.runningLocked : t.canvas.foldingLocked} 
+                showNotification={(txt) => showNotification(txt, 2000, 'warning')}
                 className="border-slate-200 shadow-sm bg-white"
                 expandText={t.common.expandView}
                 >
@@ -859,17 +885,25 @@ function App() {
       </div>
 
       {/* NOTIFICATION */}
-      <div className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[100] pointer-events-none transition-all duration-500 ease-out ${notification.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <div className={`
-            px-5 py-2.5 rounded-lg shadow-xl flex items-center gap-3 border backdrop-blur-md
-            ${notification.type === 'success' ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900' : 
-              notification.type === 'warning' ? 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900' : 
-              'bg-slate-800 dark:bg-white text-white dark:text-slate-900 border-slate-700 dark:border-slate-200'}
-        `}>
-            {notification.type === 'success' ? <CheckCircle2 size={16} className="text-emerald-500"/> :
-             notification.type === 'warning' ? <AlertCircle size={16} className="text-amber-500"/> :
-             (notification.text.includes(t.canvas.locked.split('·')[0]) ? <Lock size={16} className="text-sciblue-400"/> : <MousePointer2 size={16} className="text-amber-400"/>)}
-            <span className="font-medium text-sm">{notification.text}</span>
+      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[100] pointer-events-none">
+        <div 
+            key={notification.id}
+            className={`
+                transition-all duration-500 ease-out
+                ${notification.visible ? 'animate-slide-up opacity-100' : 'opacity-0 translate-y-8'}
+            `}
+        >
+            <div className={`
+                px-5 py-2.5 rounded-lg shadow-xl flex items-center gap-3 border backdrop-blur-md
+                ${notification.type === 'success' ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900' : 
+                  notification.type === 'warning' ? 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900' : 
+                  'bg-slate-800 dark:bg-white text-white dark:text-slate-900 border-slate-700 dark:border-slate-200'}
+            `}>
+                {notification.type === 'success' ? <CheckCircle2 size={16} className="text-emerald-500"/> :
+                 notification.type === 'warning' ? <AlertCircle size={16} className="text-amber-500"/> :
+                 (notification.text.includes(t.canvas.locked.split('·')[0]) ? <Lock size={16} className="text-sciblue-400"/> : <MousePointer2 size={16} className="text-amber-400"/>)}
+                <span className="font-medium text-sm">{notification.text}</span>
+            </div>
         </div>
       </div>
 
@@ -879,8 +913,8 @@ function App() {
         {/* Dark Mode Toggle */}
         <button 
             onClick={toggleDarkMode}
-            className="flex items-center justify-center w-8 h-8 md:w-auto md:px-3 md:py-1.5 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-sciblue-400 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all active:scale-95 shadow-sm"
             title={t.tooltips.themeToggle}
+            className="flex items-center justify-center w-8 h-8 md:w-auto md:px-3 md:py-1.5 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-sciblue-400 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all active:scale-95 shadow-sm"
         >
             {isDarkMode ? <Moon size={16} /> : <Sun size={16} />}
             <span className="hidden md:inline-block text-xs font-bold tracking-wide ml-2">{isDarkMode ? t.common.modeDark : t.common.modeLight}</span>
@@ -899,7 +933,7 @@ function App() {
             <div className="absolute right-0 top-full mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right scale-95 group-hover:scale-100 z-50">
                 <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden py-1">
                     {['zh-CN', 'zh-TW', 'en-GB', 'en-US'].map((l) => (
-                        <button key={l} onClick={() => setLang(l as LanguageCode)} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 font-medium ${lang === l ? 'text-sciblue-600 dark:text-sciblue-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                        <button key={l} onClick={() => handleLangChange(l as LanguageCode)} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 font-medium ${lang === l ? 'text-sciblue-600 dark:text-sciblue-400' : 'text-slate-500 dark:text-slate-400'}`}>
                             {l === 'zh-CN' ? '简体中文' : l === 'zh-TW' ? '繁體中文' : l === 'en-GB' ? 'English (UK)' : 'English (US)'}
                             {lang === l && <ChevronRight size={14}/>}
                         </button>
