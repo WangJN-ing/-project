@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Translation } from '../types';
 import { Github, FileText, Mail, GraduationCap, Sparkles, Check, User } from 'lucide-react';
+import { Browser } from '@capacitor/browser';
 
 interface FooterProps {
   t: Translation;
@@ -27,6 +28,24 @@ const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
           window.location.href = `mailto:${email}`;
       }, 1000);
     });
+  };
+
+  // Handle PDF opening with Capacitor Browser
+  const handleOpenPdf = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      // Get the absolute URL of the PDF file
+      // In Capacitor, window.location.origin typically points to the local server serving the app
+      const pdfUrl = `${window.location.origin}/Project_Report.pdf`;
+      
+      // Use the Browser plugin to open it in the system browser (Chrome/Drive Viewer)
+      await Browser.open({ url: pdfUrl });
+    } catch (error) {
+      console.error("Failed to open PDF via Capacitor", error);
+      // Fallback: try to open in new tab (works for web, might fail silently in some WebViews)
+      window.open('/Project_Report.pdf', '_blank');
+      showNotification("尝试打开 PDF...", 1000, 'info');
+    }
   };
 
   // Header Style - Brightened to text-slate-300
@@ -145,8 +164,8 @@ const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
                     <span>{t.footer.github}</span>
                 </a>
                 
-                {/* PDF */}
-                <a href="/Project_Report.pdf" target="_blank" rel="noopener noreferrer" download="Project_Report.pdf"
+                {/* PDF - UPDATED to use Capacitor Browser */}
+                <a href="#" onClick={handleOpenPdf}
                    className="flex items-center gap-3 text-sm text-slate-300 hover:text-white transition-all group p-2 hover:bg-slate-800 rounded-lg -ml-2"
                 >
                     <FileText size={18} className="group-hover:text-sciblue-400 group-hover:scale-110 transition-all"/> 
