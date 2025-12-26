@@ -18,3 +18,12 @@ View your app in AI Studio: https://ai.studio/apps/drive/1wyxYOy3V63ueEpMPKpJZBv
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Capacitor CLI helper
+
+Use the bundled npm script so Capacitor commands work even when the global CLI is missing:
+
+```bash
+npm run cap -- <command>
+# example: npm run cap -- init
+```
