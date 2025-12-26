@@ -234,6 +234,17 @@ function App() {
       return false;
   };
 
+  // --- Mobile Keyboard Helper ---
+  // When input is focused on mobile, ensure it scrolls into view
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (isMobile) {
+          // Add a delay to allow keyboard animation to start/finish
+          setTimeout(() => {
+              e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+      }
+  };
+
   // --- Storage Handlers ---
   const handleSaveConfig = () => {
       const nameToSave = newConfigName.trim();
@@ -585,6 +596,7 @@ function App() {
                                         placeholder={t.storage.placeholder}
                                         value={newConfigName}
                                         onChange={(e) => setNewConfigName(e.target.value)}
+                                        onFocus={handleInputFocus} // ADDED FOCUS HANDLER
                                         className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-sciblue-500 w-full"
                                     />
                                     <button onClick={handleSaveConfig} className="bg-slate-100 dark:bg-slate-800 hover:bg-sciblue-500 hover:text-white text-slate-500 dark:text-slate-400 p-1.5 rounded-md border border-slate-200 dark:border-slate-700 transition-colors shadow-sm shrink-0">
@@ -691,6 +703,7 @@ function App() {
                                                 value={isNaN(params[field.key as keyof SimulationParams]) ? '' : params[field.key as keyof SimulationParams]}
                                                 disabled={isRunning || isCanvasLocked}
                                                 onChange={(e) => handleParamChange(field.key as keyof SimulationParams, e.target.value)}
+                                                onFocus={handleInputFocus} // ADDED FOCUS HANDLER
                                                 /* MODIFIED: Compact input styles (text-xs, py-1, px-2) to fit 70vw */
                                                 className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs md:text-sm text-slate-700 dark:text-slate-200 font-mono outline-none transition-all focus:bg-white dark:focus:bg-slate-700 ${isRunning ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-900' : 'focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500/20 hover:border-slate-300 dark:hover:border-slate-600'}`}
                                                 />
