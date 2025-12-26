@@ -91,8 +91,8 @@ export interface Translation {
     save: string;
     load: string;
     delete: string;
-    rename: string;
-    renameSuccess: string;
+    duplicateName: string; // New: Duplicate name warning
+    duplicateParams: string; // New: Duplicate params warning
     setDefault: string;
     defaultSet: string;
     placeholder: string;

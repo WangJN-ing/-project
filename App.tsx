@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun, ArrowLeft, Save, Download, Trash2, Archive, Pencil, ShieldCheck, ChevronDown, LogOut, Info } from 'lucide-react';
+import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun, ArrowLeft, Save, Download, Trash2, Archive, ShieldCheck, ChevronDown, LogOut, Info } from 'lucide-react';
 import { PhysicsEngine } from './services/PhysicsEngine';
 import { SimulationParams, SimulationStats, ChartData, LanguageCode, SavedConfig } from './types';
 import { translations } from './services/translations';
@@ -221,13 +221,43 @@ function App() {
 
   // --- Storage Handlers ---
   const handleSaveConfig = () => {
-      if (!newConfigName.trim()) {
+      const nameToSave = newConfigName.trim();
+      if (!nameToSave) {
           showNotification(t.messages.checkInputs, 1500, 'warning');
           return;
       }
+      
+      // 1. Check for duplicate NAMES (including system preset)
+      const isNameDuplicate = savedConfigs.some(c => c.name === nameToSave);
+      if (isNameDuplicate) {
+          showNotification(t.storage.duplicateName, 2000, 'warning');
+          return;
+      }
+
+      // 2. Check for duplicate PARAMETERS (including system preset)
+      const isParamsDuplicate = savedConfigs.some(c => {
+          const p = c.params;
+          return (
+              p.N === params.N &&
+              p.L === params.L &&
+              p.r === params.r &&
+              p.m === params.m &&
+              p.k === params.k &&
+              p.dt === params.dt &&
+              p.nu === params.nu &&
+              p.equilibriumTime === params.equilibriumTime &&
+              p.statsDuration === params.statsDuration
+          );
+      });
+
+      if (isParamsDuplicate) {
+          showNotification(t.storage.duplicateParams, 2500, 'warning');
+          return;
+      }
+
       const newConfig: SavedConfig = {
           id: Date.now().toString(),
-          name: newConfigName.trim(),
+          name: nameToSave,
           params: { ...params },
           date: Date.now(),
           isSystem: false
@@ -261,23 +291,6 @@ function App() {
           setSavedConfigs([savedConfigs[0], ...userConfigs]);
           localStorage.setItem('hsl_favorites', JSON.stringify(userConfigs));
           if (selectedPresetId === id) setSelectedPresetId(null);
-      }
-  };
-
-  const handleRenameConfig = (id: string, currentName: string, e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation(); // Prevent selection when renaming
-      const newName = prompt(t.storage.rename, currentName);
-      if (newName && newName.trim() !== "") {
-          const updated = savedConfigs.map(c => {
-              if (c.id === id && !c.isSystem) {
-                  return { ...c, name: newName.trim() };
-              }
-              return c;
-          });
-          setSavedConfigs(updated);
-          localStorage.setItem('hsl_favorites', JSON.stringify(updated.filter(c => !c.isSystem)));
-          showNotification(t.storage.renameSuccess, 2000, 'success');
       }
   };
 
@@ -584,13 +597,6 @@ function App() {
                                             <div className="flex gap-1 relative z-10">
                                                 {!config.isSystem && (
                                                     <>
-                                                        <button 
-                                                            onClick={(e) => handleRenameConfig(config.id, config.name, e)} 
-                                                            className="text-slate-400 hover:text-sciblue-500 hover:bg-slate-200 dark:hover:bg-slate-700 p-1 rounded transition-colors" 
-                                                            title={t.storage.rename}
-                                                        >
-                                                            <Pencil size={12}/>
-                                                        </button>
                                                         <button 
                                                             onClick={(e) => handleDeleteConfig(config.id, e)} 
                                                             className="text-rose-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 p-1 rounded transition-colors" 
