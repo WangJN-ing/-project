@@ -130,9 +130,11 @@ export interface Translation {
     clickToRelease: string;
     clickToInteract: string;
     resetView: string;
-    instructionsFocused: string;
+    instructionsFocused_desktop: string; // Split
+    instructionsFocused_mobile: string;  // Split
     instructionsIdle: string;
     scrollWarning: string;
+    scrollWarning_mobile: string; // Short version
     foldingLocked: string;
     runningLocked: string;
   };

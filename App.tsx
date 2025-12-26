@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun } from 'lucide-react';
+import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun, ArrowLeft } from 'lucide-react';
 import { PhysicsEngine } from './services/PhysicsEngine';
 import { SimulationParams, SimulationStats, ChartData, LanguageCode } from './types';
 import { translations } from './services/translations';
@@ -40,6 +40,10 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [needsReset, setNeedsReset] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // New State: Mobile Hint Guide & Interaction Tracking
+  const [showMobileHint, setShowMobileHint] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const [stats, setStats] = useState<SimulationStats>({
     time: 0, temperature: 0, pressure: 0, meanSpeed: 0, rmsSpeed: 0,
@@ -89,13 +93,34 @@ function App() {
       }
   };
 
-  // Screen Size Listener
+  // Screen Size Listener & Mobile Init Logic
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => {
+        const mobile = window.innerWidth < 768;
+        setIsMobile(mobile);
+        // FORCE CLOSE SIDEBAR ON MOBILE INIT
+        if (mobile) {
+            setIsSidebarOpen(false);
+        }
+    };
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Mobile Hint Timer Logic - Optimized
+  useEffect(() => {
+    let timer: number;
+    // Show hint only if: Mobile + Sidebar Closed + Not Running + Never Interacted + After 2 seconds delay
+    if (isMobile && !isSidebarOpen && !isRunning && !hasUserInteracted) {
+        timer = window.setTimeout(() => {
+            setShowMobileHint(true);
+        }, 2000);
+    } else {
+        setShowMobileHint(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isMobile, isSidebarOpen, isRunning, hasUserInteracted]);
 
   // Initial Load & Animation smoothing
   useEffect(() => {
@@ -179,6 +204,8 @@ function App() {
   };
 
   const handleStartPause = () => {
+      setHasUserInteracted(true); // User has engaged, stop hints
+      
       if (needsReset) {
           showNotification(t.messages.resetRequired, 2500, 'warning');
           if (!isSidebarOpen) setIsSidebarOpen(true);
@@ -194,6 +221,11 @@ function App() {
       } else {
           setIsRunning(false);
       }
+  };
+
+  const handleOpenSidebar = () => {
+      setIsSidebarOpen(true);
+      setHasUserInteracted(true); // User has engaged, stop hints
   };
 
   const tick = useCallback(() => {
@@ -259,7 +291,8 @@ function App() {
             overflow-hidden
         `}
       >
-        <div className="w-[280px] min-w-[280px] h-full flex flex-col p-5 overflow-y-auto">
+        {/* Added safe-area padding for mobile: pt-14 */}
+        <div className="w-[280px] min-w-[280px] h-full flex flex-col p-5 pt-14 md:pt-5 overflow-y-auto">
             {/* Sidebar Header */}
             <div className="flex flex-col gap-6 mb-6">
                 <div className="flex items-center justify-between">
@@ -395,12 +428,12 @@ function App() {
         
         {/* Modern Header Area */}
         {/* Landscape Optimization: Reduced top/bottom padding to maximize vertical space */}
-        <header className="pt-20 pb-4 landscape:pt-6 landscape:pb-1 md:pt-24 md:pb-6 px-6 max-w-4xl mx-auto text-center animate-fade-in w-full shrink-0">
+        <header className="pt-24 pb-4 landscape:pt-6 landscape:pb-1 md:pt-24 md:pb-6 px-6 max-w-4xl mx-auto text-center animate-fade-in w-full shrink-0">
             {/* Version Badge - Centered Above Title */}
             <div className="flex justify-center mb-5 landscape:mb-2">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-bold tracking-[0.2em] uppercase shadow-sm ring-1 ring-slate-100 dark:ring-slate-800">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
-                    {t.header.systemOp} · v1.2
+                    {t.header.systemOp} · v2.1
                 </div>
             </div>
             
@@ -426,9 +459,11 @@ function App() {
               className="border-slate-200 shadow-sm bg-white"
               expandText={t.common.expandView}
             >
+               {/* PASS isMobile PROP */}
                <SimulationCanvas 
                   particles={engineRef.current?.particles || []} L={activeParams.L} r={activeParams.r} isRunning={isRunning} t={t}
                   isFocused={isCanvasLocked} onFocusChange={setIsCanvasLocked} showNotification={(txt, dur) => showNotification(txt, dur, 'info')}
+                  isMobile={isMobile}
                />
                <div className="mt-4">
                  <StatsPanel stats={stats} eqTime={params.equilibriumTime} statDuration={params.statsDuration} t={t} />
@@ -472,29 +507,52 @@ function App() {
         {/* Footer Restored Here */}
         <Footer t={t} showNotification={(msg, dur, type) => showNotification(msg, dur, type)} />
 
-        {/* --- FLOATING CONTROLS --- */}
+        {/* --- FLOATING CONTROLS (Left Top) --- */}
         <div 
             className={`
-                fixed top-4 left-4 z-40 flex items-center gap-3 transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)
+                fixed top-14 md:top-6 left-4 z-40 flex items-center gap-3 transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)
                 ${!isSidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-[-150%] opacity-0 pointer-events-none'}
             `}
         >
-            <button
-                onClick={() => setIsSidebarOpen(true)}
-                title={t.tooltips.openSidebar}
-                // Reduced padding on mobile: pr-3 pl-1 py-1
-                className="flex items-center gap-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md pr-3 pl-1 py-1 md:pr-5 md:pl-1.5 md:py-1.5 rounded-full border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgb(14,165,233,0.15)] hover:scale-105 active:scale-95 transition-all group"
-            >
-                 {/* Reduced size: w-6 h-6 on mobile */}
-                 <div className="w-6 h-6 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-sciblue-500 to-indigo-600 flex items-center justify-center border border-white/20 text-white shadow-inner group-hover:rotate-12 transition-transform duration-500">
-                    <Atom size={isMobile ? 12 : 18} />
-                 </div>
-                 <div className="flex flex-col items-start leading-none group-hover:text-sciblue-600 dark:group-hover:text-sciblue-400 transition-colors duration-300">
-                   {/* Reduced font size */}
-                   <span className="text-[8px] md:text-[11px] font-extrabold text-slate-700 dark:text-slate-200 tracking-widest uppercase font-mono group-hover:text-sciblue-600 dark:group-hover:text-sciblue-400">BJTU</span>
-                   <span className="text-[8px] md:text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-wide group-hover:text-sciblue-400 dark:group-hover:text-sciblue-300">WEIHAI</span>
-                </div>
-            </button>
+            <div className="relative">
+                {/* Mobile Hint Ping Animation Layer */}
+                {showMobileHint && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sciblue-400 opacity-75"></span>
+                )}
+                
+                <button
+                    onClick={handleOpenSidebar}
+                    title={t.tooltips.openSidebar}
+                    // Reduced padding on mobile: pr-3 pl-1 py-1
+                    // Added ring animation support for mobile hint
+                    className={`
+                        relative flex items-center gap-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md pr-3 pl-1 py-1 md:pr-5 md:pl-1.5 md:py-1.5 rounded-full border shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgb(14,165,233,0.15)] hover:scale-105 active:scale-95 transition-all group z-10
+                        ${showMobileHint ? 'border-sciblue-400 ring-2 ring-sciblue-400/30' : 'border-slate-200/60 dark:border-slate-700/60'}
+                    `}
+                >
+                     {/* Reduced size: w-6 h-6 on mobile */}
+                     <div className="w-6 h-6 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-sciblue-500 to-indigo-600 flex items-center justify-center border border-white/20 text-white shadow-inner group-hover:rotate-12 transition-transform duration-500">
+                        <Atom size={isMobile ? 12 : 18} />
+                     </div>
+                     <div className="flex flex-col items-start leading-none group-hover:text-sciblue-600 dark:group-hover:text-sciblue-400 transition-colors duration-300">
+                       {/* Reduced font size */}
+                       <span className="text-[8px] md:text-[11px] font-extrabold text-slate-700 dark:text-slate-200 tracking-widest uppercase font-mono group-hover:text-sciblue-600 dark:group-hover:text-sciblue-400">BJTU</span>
+                       <span className="text-[8px] md:text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-wide group-hover:text-sciblue-400 dark:group-hover:text-sciblue-300">WEIHAI</span>
+                    </div>
+                </button>
+
+                {/* Mobile Tooltip Guide - MOVED INSIDE RELATIVE WRAPPER & POSITIONED BELOW */}
+                {showMobileHint && (
+                   <div className="absolute top-full left-0 mt-2 flex flex-col items-start animate-fade-in pointer-events-none z-50 w-max">
+                      {/* Arrow pointing up */}
+                      <div className="w-0 h-0 border-x-[6px] border-x-transparent border-b-[8px] border-b-sciblue-500 ml-3 drop-shadow-sm"></div>
+                      {/* Text Bubble */}
+                      <span className="bg-sciblue-50 dark:bg-sciblue-900/95 text-sciblue-700 dark:text-sciblue-100 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-lg border border-sciblue-500 whitespace-nowrap">
+                         {t.tooltips.openSidebar}
+                      </span>
+                   </div>
+                )}
+            </div>
 
             {!needsReset && (
                 <button
@@ -516,8 +574,8 @@ function App() {
 
       </main>
 
-      {/* VISITOR TOAST - Moved to top-28 (112px) on mobile to clear buttons */}
-      <div className={`fixed top-28 md:top-6 left-1/2 transform -translate-x-1/2 z-[100] transition-all duration-700 ease-in-out ${showVisitorToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8 pointer-events-none'}`}>
+      {/* VISITOR TOAST - MOVED TO BOTTOM */}
+      <div className={`fixed bottom-24 md:bottom-10 left-1/2 transform -translate-x-1/2 z-[100] transition-all duration-700 ease-in-out ${showVisitorToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
         <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-600 dark:text-slate-200 px-5 py-2 rounded-full shadow-xl border border-slate-100 dark:border-slate-700 flex items-center gap-3">
             <span className="bg-emerald-100 dark:bg-emerald-900/40 p-1 rounded-full"><User size={12} className="text-emerald-600 dark:text-emerald-400"/></span>
             {/* Localized Visitor String */}
@@ -543,7 +601,8 @@ function App() {
       </div>
 
       {/* RIGHT TOP CONTROLS: Dark Mode + Language */}
-      <div className="fixed top-4 right-4 md:top-6 md:right-6 z-[60] flex items-center gap-3">
+      {/* Hide on Mobile when sidebar is open to prevent overlap with Sidebar Close button */}
+      <div className={`fixed top-14 right-4 md:top-6 md:right-6 z-[60] flex items-center gap-3 transition-opacity duration-300 ${isMobile && isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {/* Dark Mode Toggle */}
         <button 
             onClick={toggleDarkMode}
@@ -558,7 +617,8 @@ function App() {
         <div className="group relative">
             <button className="flex items-center gap-2 px-3 py-1.5 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all active:scale-95 shadow-sm">
                 <Globe size={16} />
-                <span className="text-xs font-bold tracking-wide">{t.header.language}</span>
+                {/* HIDDEN ON MOBILE */}
+                <span className="hidden md:inline-block text-xs font-bold tracking-wide">{t.header.language}</span>
             </button>
             <div className="absolute right-0 top-full mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right scale-95 group-hover:scale-100 z-50">
                 <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden py-1">

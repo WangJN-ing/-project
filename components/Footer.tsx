@@ -14,12 +14,19 @@ const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
     e.preventDefault();
     const email = "3381173206@qq.com";
     
+    // Copy to clipboard first
     navigator.clipboard.writeText(email).then(() => {
       setEmailCopied(true);
       showNotification(t.footer.emailCopiedMsg, 2000, 'success');
+      
+      // Reset copied state after animation
       setTimeout(() => setEmailCopied(false), 2000); 
+      
+      // Add delay before opening mail client so user sees the notification
+      setTimeout(() => {
+          window.location.href = `mailto:${email}`;
+      }, 1000);
     });
-    window.location.href = `mailto:${email}`;
   };
 
   // Header Style - Brightened to text-slate-300

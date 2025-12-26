@@ -11,11 +11,12 @@ interface SimulationCanvasProps {
   isFocused: boolean;
   onFocusChange: (focused: boolean) => void;
   showNotification: (text: string, duration?: number) => void;
+  isMobile?: boolean; // New Prop
 }
 
 const SimulationCanvas: React.FC<SimulationCanvasProps> = ({ 
     particles, L, r, isRunning, t, 
-    isFocused, onFocusChange, showNotification 
+    isFocused, onFocusChange, showNotification, isMobile = false 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,6 +37,9 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   const lastTouchDist = useRef<number | null>(null);
   const lastTouchCenter = useRef<{x: number, y: number} | null>(null);
 
+  // Notification Throttling for Scroll Warning
+  const lastScrollWarningTime = useRef(0);
+
   // Reset Pan mode when focus is lost
   useEffect(() => {
     if (!isFocused) setIsPanMode(false);
@@ -54,6 +58,35 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isFocused, onFocusChange]);
+
+  // --- GLOBAL SCROLL LOCKING FOR MOBILE (TouchMove Prevention) ---
+  useEffect(() => {
+      if (!isMobile || !isFocused) return;
+
+      const preventDefaultScroll = (e: TouchEvent) => {
+          // If the target is NOT inside the canvas container, prevent scroll and warn
+          if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+              if (e.cancelable) {
+                  e.preventDefault();
+                  
+                  // Throttle the notification to avoid spam
+                  const now = Date.now();
+                  if (now - lastScrollWarningTime.current > 1500) {
+                      showNotification(t.canvas.scrollWarning_mobile);
+                      lastScrollWarningTime.current = now;
+                  }
+              }
+          }
+      };
+
+      // Passive: false is required to use preventDefault()
+      document.addEventListener('touchmove', preventDefaultScroll, { passive: false });
+
+      return () => {
+          document.removeEventListener('touchmove', preventDefaultScroll);
+      };
+  }, [isFocused, isMobile, showNotification, t.canvas.scrollWarning_mobile]);
+
 
   // Toggle Focus Logic
   const toggleFocus = () => {
@@ -232,13 +265,21 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
          const zoomFactor = -e.deltaY * zoomSensitivity * 0.5;
          setScale(prev => Math.max(0.2, Math.min(5, prev + zoomFactor)));
       } else {
-         showNotification(t.canvas.scrollWarning);
+         // Desktop scroll warning
+         if (!isMobile) {
+             const now = Date.now();
+             if (now - lastScrollWarningTime.current > 1500) {
+                 showNotification(t.canvas.scrollWarning);
+                 lastScrollWarningTime.current = now;
+             }
+         }
       }
     };
     
+    // Add non-passive listener to prevent default scroll
     window.addEventListener('wheel', handleGlobalWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleGlobalWheel);
-  }, [isFocused, showNotification, t]);
+  }, [isFocused, showNotification, t, isMobile]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isFocused) { toggleFocus(); return; }
@@ -284,6 +325,9 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   const handleTouchMove = (e: React.TouchEvent) => {
       // If not focused, let the browser handle scrolling (handled by CSS touch-action)
       if (!isFocused) return;
+
+      // Prevent default scrolling *inside* the canvas (handled by touch-action: none, but reinforcement doesn't hurt)
+      // Note: Global scroll prevention is handled by the useEffect above.
 
       if (e.touches.length === 2 && lastTouchDist.current !== null) {
           const t1 = e.touches[0];
@@ -341,6 +385,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
         <div 
             ref={containerRef}
             // CRITICAL FIX: Explicit inline style for touch-action ensures browser respects scrolling when not focused
+            // When focused, 'none' prevents browser processing, but our global listener handles outside touches.
             style={{ touchAction: isFocused ? 'none' : 'pan-y' }}
             className={`
                 relative w-full rounded-lg overflow-hidden group bg-slate-900
@@ -405,11 +450,13 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
                 </div>
             </div>
 
-            {/* Instructions Overlay */}
+            {/* Instructions Overlay - CONDITIONAL TEXT BASED ON DEVICE */}
             <div className="absolute bottom-4 left-4 pointer-events-none select-none z-20">
                 {isFocused ? (
                      <div className="text-xs text-sciblue-100 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10 shadow-lg animate-fade-in-up">
-                        <p className="font-medium">{t.canvas.instructionsFocused}</p>
+                        <p className="font-medium">
+                            {isMobile ? t.canvas.instructionsFocused_mobile : t.canvas.instructionsFocused_desktop}
+                        </p>
                      </div>
                 ) : (
                     <div className="flex items-center gap-2 text-xs text-amber-400 font-bold tracking-wide animate-pulse">
