@@ -738,7 +738,7 @@ function App() {
             <div className="flex justify-center mb-5 landscape:mb-2">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-bold tracking-[0.2em] uppercase shadow-sm ring-1 ring-slate-100 dark:ring-slate-800">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
-                    {t.header.systemOp} · v2.1
+                    {t.header.systemOp} · v2.2
                 </div>
             </div>
             
