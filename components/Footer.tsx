@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Translation } from '../types';
 import { Github, FileText, Mail, GraduationCap, Sparkles, Check, User } from 'lucide-react';
 import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 
 interface FooterProps {
   t: Translation;
@@ -33,16 +34,19 @@ const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
   // Handle PDF opening with Capacitor Browser
   const handleOpenPdf = async (e: React.MouseEvent) => {
     e.preventDefault();
+    const pdfUrl = `${window.location.origin}/Project_Report.pdf`;
+
     try {
-      // Get the absolute URL of the PDF file
-      // In Capacitor, window.location.origin typically points to the local server serving the app
-      const pdfUrl = `${window.location.origin}/Project_Report.pdf`;
-      
-      // Use the Browser plugin to open it in the system browser (Chrome/Drive Viewer)
-      await Browser.open({ url: pdfUrl });
+      if (Capacitor.isNativePlatform()) {
+          // Force opening in the System Browser / Drive Viewer on Android to avoid garbled text in WebView
+          await Browser.open({ url: pdfUrl, windowName: '_system' });
+      } else {
+          // Standard web behavior
+          window.open(pdfUrl, '_blank');
+      }
     } catch (error) {
       console.error("Failed to open PDF via Capacitor", error);
-      // Fallback: try to open in new tab (works for web, might fail silently in some WebViews)
+      // Fallback
       window.open('/Project_Report.pdf', '_blank');
       showNotification("尝试打开 PDF...", 1000, 'info');
     }
@@ -71,8 +75,8 @@ const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
               </div>
               <div>
                   <h2 className="text-xl font-bold text-white tracking-tight leading-tight mb-2">{t.title}</h2>
-                  {/* Lightened description from slate-400 to slate-300 */}
-                  <p className="text-sm leading-relaxed text-slate-300">
+                  {/* Lightened description from slate-400 to slate-300, enable line break via whitespace-pre-line */}
+                  <p className="text-sm leading-relaxed text-slate-300 whitespace-pre-line">
                       {t.footer.school}
                   </p>
               </div>
@@ -146,7 +150,8 @@ const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
               <div className="text-xs text-slate-300 leading-relaxed bg-slate-800/30 p-4 rounded-xl border border-slate-700 hover:border-sciblue-500/30 transition-colors group">
                  <p className="flex items-start gap-3">
                     <Sparkles size={16} className="mt-0.5 text-amber-400 shrink-0 fill-amber-500/20 group-hover:animate-pulse"/>
-                    <span className="leading-5">{t.footer.acknowledgement}</span>
+                    {/* Enable line break */}
+                    <span className="leading-5 whitespace-pre-line">{t.footer.acknowledgement}</span>
                  </p>
               </div>
             </div>
@@ -187,9 +192,12 @@ const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
       
       {/* Bottom Bar */}
       <div className="bg-slate-950/50 border-t border-slate-800 py-6">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-400 uppercase tracking-widest">
-            <p>© 2025 Hard Sphere Project. All rights reserved.</p>
-            <p className="mt-2 md:mt-0 flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-400 uppercase tracking-widest text-center md:text-left">
+            <p>
+                © 2025 Hard Sphere Project. <br className="md:hidden"/>
+                All rights reserved.
+            </p>
+            <p className="mt-2 md:mt-0 flex items-center justify-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-sciblue-500"></span>
                 {t.footer.designedBy}
             </p>

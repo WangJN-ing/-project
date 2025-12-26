@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun, ArrowLeft, Save, Download, Trash2, Archive, ShieldCheck, ChevronDown, LogOut, Info } from 'lucide-react';
+import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun, ArrowLeft, Save, Download, Trash2, Archive, ShieldCheck, ChevronDown, LogOut, Info, Check } from 'lucide-react';
 import { PhysicsEngine } from './services/PhysicsEngine';
 import { SimulationParams, SimulationStats, ChartData, LanguageCode, SavedConfig } from './types';
 import { translations } from './services/translations';
@@ -28,7 +28,7 @@ function App() {
   const [lang, setLang] = useState<LanguageCode>('zh-CN');
   const t = translations[lang];
 
-  // Dark Mode State
+  // Dark Mode State - Default to FALSE (Light Mode)
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Simulation State
@@ -40,6 +40,10 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [needsReset, setNeedsReset] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // KEYBOARD/SHORT SCREEN DETECTION
+  // When keyboard is open, height shrinks significantly. We need to detect this to change layout.
+  const [isShortHeight, setIsShortHeight] = useState(false);
 
   // SECTION COLLAPSE STATES
   // Default: Storage Collapsed (false), Params Expanded (true)
@@ -104,8 +108,8 @@ function App() {
   // Dark Mode Logic
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (storedTheme === 'dark' || (!storedTheme && systemPrefersDark)) {
+    // Only set to Dark if explicitly stored as 'dark'. Default is Light.
+    if (storedTheme === 'dark') {
         setIsDarkMode(true);
         document.documentElement.classList.add('dark');
     } else {
@@ -130,14 +134,25 @@ function App() {
 
   // Screen Size Listener & Mobile Init Logic
   useEffect(() => {
-    const checkMobile = () => {
-        const mobile = window.innerWidth < 768;
-        setIsMobile(mobile);
-        if (mobile) setIsSidebarOpen(false);
+    // Helper function to check width and height
+    const handleResize = () => {
+        setIsMobile(window.innerWidth < 768);
+        // Detect "Short Height" (Keyboard Open or Landscape Mobile)
+        // 600px is a safe threshold. If height < 600, it's likely keyboard is open or phone is rotated.
+        setIsShortHeight(window.innerHeight < 600);
     };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+
+    // 1. Initial Check on Mount
+    handleResize();
+    
+    // Only set Sidebar to closed INITIALLY if on mobile.
+    if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+    }
+
+    // 2. Resize Listener
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Storage Logic: Load on Mount (Merge System + Local)
@@ -478,6 +493,7 @@ function App() {
             onClick={(e) => {
                 e.stopPropagation();
                 setIsCanvasLocked(false);
+                showNotification(t.canvas.autoExit, 1500); // Trigger Notification on Click Outside
             }}
             title={t.canvas.clickToRelease}
         />
@@ -493,24 +509,36 @@ function App() {
         className={`
             fixed md:relative z-[45] h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl md:shadow-none
             transition-[width,transform,background-color] duration-500 cubic-bezier(0.25, 1, 0.5, 1) flex flex-col
-            ${isSidebarOpen ? 'w-[300px] translate-x-0' : 'w-0 -translate-x-full md:w-0 md:translate-x-0'}
+            /* MODIFIED: Width 85vw on mobile, 300px desktop */
+            ${isSidebarOpen ? 'w-[85vw] md:w-[300px] translate-x-0' : 'w-0 -translate-x-full md:w-0 md:translate-x-0'}
             overflow-hidden
+            landscape:block landscape:overflow-y-auto landscape:md:flex landscape:md:overflow-hidden
         `}
       >
-        {/* NEW LAYOUT: Flex Column Container to Pin Footer */}
-        <div className="w-[300px] min-w-[300px] h-full flex flex-col bg-white dark:bg-slate-900">
+        {/* NEW LAYOUT: Dynamic Container Mode based on Height */}
+        {/* If isShortHeight (keyboard open or landscape mobile), use BLOCK layout with scrolling, else FLEX layout with fixed footer */}
+        <div className={`
+            w-[85vw] md:w-[300px] min-w-[300px] bg-white dark:bg-slate-900
+            ${isShortHeight ? 'block h-full overflow-y-auto' : 'flex flex-col h-full'}
+            landscape:block landscape:h-auto landscape:md:h-full landscape:md:flex
+        `}>
             
             {/* 1. TOP & MIDDLE: Header + Scrollable Parameters */}
-            {/* Added scrollbar-gutter: stable to prevent width jitter when content changes height */}
             <div 
-                className="flex-1 overflow-y-auto min-h-0 flex flex-col"
+                className={`
+                    min-h-0 flex flex-col 
+                    ${isShortHeight ? 'overflow-visible' : 'flex-1 overflow-y-auto'}
+                    landscape:flex-none landscape:overflow-visible landscape:md:flex-1 landscape:md:overflow-y-auto
+                `}
                 style={{ scrollbarGutter: 'stable' }}
             >
-                <div className="p-5 pt-14 md:pt-5 pb-2">
+                {/* Compact Padding for sidebar header */}
+                <div className="p-3 pt-14 md:p-5 md:pt-5 pb-2">
                     
                     {/* Header */}
                     <div className="flex flex-col gap-6 mb-4">
-                        <div className="flex items-center justify-between">
+                        {/* MODIFIED: Added w-[85%] mx-auto to match input fields symmetry */}
+                        <div className="flex items-center justify-between w-[85%] mx-auto">
                             <div className="flex items-center gap-3 select-none">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sciblue-500 to-indigo-600 flex items-center justify-center border border-white/20 text-white shadow-inner">
                                     <Atom size={18} />
@@ -531,9 +559,10 @@ function App() {
                         
                         {/* STORAGE SECTION (COLLAPSIBLE) */}
                         <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
+                            {/* MODIFIED: Added w-[85%] mx-auto to center the Header Row */}
                             <div 
                                 onClick={() => setIsStorageOpen(!isStorageOpen)}
-                                className="flex items-center justify-between cursor-pointer group mb-2 py-1 select-none"
+                                className="w-[85%] mx-auto flex items-center justify-between cursor-pointer group mb-2 py-1 select-none"
                             >
                                 <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider group-hover:text-sciblue-600 dark:group-hover:text-sciblue-400 transition-colors">
                                     <Archive size={14} className="text-slate-400 dark:text-slate-500 group-hover:text-sciblue-500 transition-colors group-hover:scale-110 duration-300"/> 
@@ -549,39 +578,39 @@ function App() {
                             
                             {/* Smoother cubic-bezier transition for collapse */}
                             <div className={`overflow-hidden transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isStorageOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                                {/* Save Current */}
-                                <div className="flex gap-2 mb-3 mt-1 px-0.5">
+                                {/* Save Current - Centered & Width 85% */}
+                                <div className="flex gap-2 mb-3 mt-1 w-[85%] mx-auto">
                                     <input 
                                         type="text" 
                                         placeholder={t.storage.placeholder}
                                         value={newConfigName}
                                         onChange={(e) => setNewConfigName(e.target.value)}
-                                        className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-sciblue-500"
+                                        className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-sciblue-500 w-full"
                                     />
-                                    <button onClick={handleSaveConfig} className="bg-slate-100 dark:bg-slate-800 hover:bg-sciblue-500 hover:text-white text-slate-500 dark:text-slate-400 p-1.5 rounded-md border border-slate-200 dark:border-slate-700 transition-colors shadow-sm">
+                                    <button onClick={handleSaveConfig} className="bg-slate-100 dark:bg-slate-800 hover:bg-sciblue-500 hover:text-white text-slate-500 dark:text-slate-400 p-1.5 rounded-md border border-slate-200 dark:border-slate-700 transition-colors shadow-sm shrink-0">
                                         <Save size={16} />
                                     </button>
                                 </div>
 
-                                {/* Default Button */}
+                                {/* Default Button - Centered & Width 85% */}
                                 <button 
                                     onClick={handleSetCustomDefault} 
-                                    className="w-full mb-3 text-[10px] text-slate-400 hover:text-sciblue-600 dark:hover:text-sciblue-400 flex items-center justify-center gap-1 py-1 border border-dashed border-slate-200 dark:border-slate-700 rounded hover:border-sciblue-300 transition-colors group"
+                                    className="w-[85%] mx-auto mb-3 text-[10px] text-slate-400 hover:text-sciblue-600 dark:hover:text-sciblue-400 flex items-center justify-center gap-1 py-1 border border-dashed border-slate-200 dark:border-slate-700 rounded hover:border-sciblue-300 transition-colors group"
                                     title={t.storage.setDefault}
                                 >
                                     <CheckCircle2 size={10} className="text-slate-300 group-hover:text-sciblue-500 transition-colors"/> 
                                     <span className="group-hover:font-semibold transition-all">{t.storage.setDefault}</span>
                                 </button>
 
-                                {/* List */}
-                                <div className="space-y-2 pb-2 px-0.5">
+                                {/* List - Centered & Width 85% */}
+                                <div className="space-y-2 pb-2 w-[85%] mx-auto">
                                     {savedConfigs.length === 1 && <div className="text-[10px] text-center text-slate-400 italic py-2">{t.storage.empty}</div>}
                                     {savedConfigs.map(config => (
                                         <div 
                                             key={config.id} 
                                             onClick={() => handleSelectPreset(config)}
                                             className={`
-                                                relative flex items-center justify-between p-2 rounded border cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm group
+                                                relative flex items-center justify-between p-1.5 rounded border cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm group
                                                 ${selectedPresetId === config.id 
                                                     ? 'bg-sciblue-50 dark:bg-sciblue-900/20 border-sciblue-400 dark:border-sciblue-600 ring-1 ring-sciblue-400 dark:ring-sciblue-600' 
                                                     : config.isSystem 
@@ -615,9 +644,10 @@ function App() {
 
                         {/* PARAMETER SECTION (COLLAPSIBLE) */}
                         <div className="pt-2">
+                            {/* MODIFIED: Added w-[85%] mx-auto to center the Header Row */}
                             <div 
                                 onClick={() => setIsParamsOpen(!isParamsOpen)}
-                                className="flex items-center justify-between cursor-pointer group mb-2 py-1 select-none"
+                                className="w-[85%] mx-auto flex items-center justify-between cursor-pointer group mb-2 py-1 select-none"
                             >
                                 <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider group-hover:text-sciblue-600 dark:group-hover:text-sciblue-400 transition-colors">
                                     <SlidersHorizontal size={14} className="text-slate-400 dark:text-slate-500 group-hover:text-sciblue-500 transition-colors group-hover:scale-110 duration-300"/> 
@@ -651,15 +681,18 @@ function App() {
                                     { key: 'equilibriumTime', label: t.controls.equilTime, min: 0 },
                                     { key: 'statsDuration', label: t.controls.statsDuration, min: 0 },
                                     ].map((field) => (
-                                        <div key={field.key} className="group relative last:mb-0">
-                                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase block mb-1">{field.label}</label>
+                                        // CENTERED INPUT CONTAINER w-[85%] mx-auto
+                                        <div key={field.key} className="group relative last:mb-0 w-[85%] mx-auto">
+                                            {/* Reduced label margin */}
+                                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase block mb-0.5">{field.label}</label>
                                             <div className="relative">
                                                 <input 
                                                 type="number" step={field.step} min={field.min}
                                                 value={isNaN(params[field.key as keyof SimulationParams]) ? '' : params[field.key as keyof SimulationParams]}
                                                 disabled={isRunning || isCanvasLocked}
                                                 onChange={(e) => handleParamChange(field.key as keyof SimulationParams, e.target.value)}
-                                                className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 font-mono outline-none transition-all focus:bg-white dark:focus:bg-slate-700 ${isRunning ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-900' : 'focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500/20 hover:border-slate-300 dark:hover:border-slate-600'}`}
+                                                /* MODIFIED: Compact input styles (text-xs, py-1, px-2) to fit 70vw */
+                                                className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs md:text-sm text-slate-700 dark:text-slate-200 font-mono outline-none transition-all focus:bg-white dark:focus:bg-slate-700 ${isRunning ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-900' : 'focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500/20 hover:border-slate-300 dark:hover:border-slate-600'}`}
                                                 />
                                                 {isRunning && <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"/>}
                                             </div>
@@ -673,14 +706,19 @@ function App() {
                 </div>
             </div>
 
-            {/* 2. BOTTOM BUTTONS (PINNED TO BOTTOM, NO OVERLAY) */}
-            <div className="flex-none p-5 pt-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-10">
-                 <div className="flex flex-col gap-3">
+            {/* 2. BOTTOM BUTTONS (PINNED TO BOTTOM NORMALLY, STATIC FLOW IN SHORT HEIGHT/MOBILE LANDSCAPE) */}
+            <div className={`
+                p-3 pt-2 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-10 
+                ${isShortHeight ? 'static pb-8 border-t-0' : 'flex-none'}
+                landscape:border-t-0 landscape:pb-8 landscape:flex-none landscape:static
+            `}>
+                 <div className="flex flex-col gap-2 items-center">
                     <button 
                         onClick={handleStartPause}
                         disabled={needsReset} 
+                        // MODIFIED: w-[85%]
                         className={`
-                            w-full font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all text-sm shadow-sm
+                            w-[85%] font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all text-xs md:text-sm shadow-sm
                             ${needsReset 
                                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700' 
                                 : !isRunning 
@@ -691,7 +729,7 @@ function App() {
                         `}
                         title={isRunning ? t.controls.pause : t.controls.start}
                     >
-                        {!isRunning ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />} 
+                        {!isRunning ? <Play size={14} fill="currentColor" /> : <Pause size={14} fill="currentColor" />} 
                         {isRunning 
                             ? t.controls.pause 
                             : (stats.time > 0 && !needsReset) ? t.controls.resume : t.controls.start
@@ -700,8 +738,9 @@ function App() {
                     
                     <button 
                     onClick={handleReset}
+                    // MODIFIED: w-[85%]
                     className={`
-                        w-full font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all border text-sm
+                        w-[85%] font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all border text-xs md:text-sm
                         ${isRunning 
                             ? 'bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 border-slate-100 dark:border-slate-800 cursor-not-allowed'
                             : needsReset 
@@ -712,12 +751,12 @@ function App() {
                     `}
                     title={t.controls.reset}
                     >
-                    <RotateCcw size={16} className={needsReset ? "animate-spin-slow" : ""} /> {t.controls.reset}
+                    <RotateCcw size={14} className={needsReset ? "animate-spin-slow" : ""} /> {t.controls.reset}
                     </button>
                     
                     <button 
                         onClick={handleCloseSidebar}
-                        className={`hidden md:flex items-center justify-center gap-2 mt-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-sciblue-600 dark:hover:text-sciblue-400 transition-colors py-2 uppercase tracking-widest ${isCanvasLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`flex items-center justify-center gap-2 mt-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-sciblue-600 dark:hover:text-sciblue-400 transition-colors py-1 uppercase tracking-widest ${isCanvasLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title={t.common.collapse}
                     >
                         <PanelLeftClose size={12}/> {t.common.collapse}

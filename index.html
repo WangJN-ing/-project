@@ -2,16 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, interactive-widget=resizes-content" />
     <title>Hard Sphere Lab</title>
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="manifest" href="/manifest.json" />
-    <!-- Keep Tailwind CDN for simplicity, though normally Vite handles this too -->
+    <!-- Keep Tailwind CDN for simplicity -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
-        darkMode: 'class', // Enable class-based dark mode
+        darkMode: 'class', 
         theme: {
           extend: {
             fontFamily: {
@@ -60,7 +60,7 @@
     </script>
     <style>
       body {
-        background-color: #f8fafc; /* Slate-50 base */
+        background-color: #f8fafc; /* Slate-50 base (Light Mode Default) */
         color: #0f172a; /* Darker default text */
         overflow-x: hidden;
         position: relative;
@@ -249,6 +249,7 @@
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
     "recharts": "https://esm.sh/recharts@^3.6.0",
     "@capacitor/browser": "https://esm.sh/@capacitor/browser@^8.0.0",
+    "@capacitor/core": "https://esm.sh/@capacitor/core@^8.0.0",
     "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
