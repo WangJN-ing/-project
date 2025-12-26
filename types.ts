@@ -12,6 +12,14 @@ export interface SimulationParams {
   statsDuration: number;   // Duration to collect stats
 }
 
+export interface SavedConfig {
+  id: string;
+  name: string;
+  params: SimulationParams;
+  date: number;
+  isSystem: boolean;
+}
+
 export interface Particle {
   x: number;
   y: number;
@@ -78,6 +86,23 @@ export interface Translation {
     restoreDefaults: string;
     default: string; // New: Short default button text
   };
+  storage: {
+    title: string;
+    save: string;
+    load: string;
+    delete: string;
+    rename: string;
+    renameSuccess: string;
+    setDefault: string;
+    defaultSet: string;
+    placeholder: string;
+    empty: string;
+    saveSuccess: string;
+    loadSuccess: string;
+    confirmDelete: string;
+    systemPresetName: string;
+    selectFirst: string;
+  };
   messages: {
     resetRequired: string;
     resetSuccess: string;
@@ -137,6 +162,10 @@ export interface Translation {
     scrollWarning_mobile: string; // Short version
     foldingLocked: string;
     runningLocked: string;
+    interactionLocked: string;
+    autoExit: string;
+    switchedToPan: string;
+    switchedToRotate: string;
   };
   tooltips: {
     openSidebar: string;
@@ -145,6 +174,10 @@ export interface Translation {
     rotateMode: string;
     resetCamera: string;
     togglePan: string;
+    modeHint: string;
+    tryToggle: string;
+    themeToggle: string;
+    langToggle: string;
   };
   common: {
     expandDetails: string;

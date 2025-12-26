@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Particle, Translation } from '../types';
-import { MousePointer2, Lock, Unlock, Hand, Rotate3d, Maximize } from 'lucide-react';
+import { MousePointer2, Lock, Unlock, Hand, Rotate3d, Maximize, AlertCircle } from 'lucide-react';
 
 interface SimulationCanvasProps {
   particles: Particle[];
@@ -28,6 +28,8 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   
   // Interaction State
   const [isPanMode, setIsPanMode] = useState(false); 
+  const [showPanHint, setShowPanHint] = useState(false);
+  const hasToggledPan = useRef(false);
   
   // Mouse Refs
   const isDragging = useRef(false);
@@ -39,6 +41,21 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
 
   // Notification Throttling for Scroll Warning
   const lastScrollWarningTime = useRef(0);
+
+  // 1. Hint Logic: If focused > 2s and never toggled, show hint
+  useEffect(() => {
+      let timer: number;
+      if (isFocused && !hasToggledPan.current) {
+          timer = window.setTimeout(() => {
+              if (!hasToggledPan.current && isFocused) {
+                  setShowPanHint(true);
+              }
+          }, 2000);
+      } else {
+          setShowPanHint(false);
+      }
+      return () => clearTimeout(timer);
+  }, [isFocused]);
 
   // Reset Pan mode when focus is lost
   useEffect(() => {
@@ -59,33 +76,26 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     };
   }, [isFocused, onFocusChange]);
 
-  // --- GLOBAL SCROLL LOCKING FOR MOBILE (TouchMove Prevention) ---
+  // --- GLOBAL SCROLL LOCKING & AUTO-EXIT ---
   useEffect(() => {
-      if (!isMobile || !isFocused) return;
+      if (!isFocused) return;
 
-      const preventDefaultScroll = (e: TouchEvent) => {
-          // If the target is NOT inside the canvas container, prevent scroll and warn
+      const handleGlobalMove = (e: TouchEvent) => {
+          // If the target is NOT inside the canvas container, detect intent to scroll away
           if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-              if (e.cancelable) {
-                  e.preventDefault();
-                  
-                  // Throttle the notification to avoid spam
-                  const now = Date.now();
-                  if (now - lastScrollWarningTime.current > 1500) {
-                      showNotification(t.canvas.scrollWarning_mobile);
-                      lastScrollWarningTime.current = now;
-                  }
-              }
+              // User is scrolling outside -> Auto Exit Interaction Mode
+              onFocusChange(false);
+              showNotification(t.canvas.autoExit, 1500);
           }
       };
 
-      // Passive: false is required to use preventDefault()
-      document.addEventListener('touchmove', preventDefaultScroll, { passive: false });
+      // Passive: false is required to use preventDefault(), though we are just detecting here mostly
+      document.addEventListener('touchmove', handleGlobalMove, { passive: false });
 
       return () => {
-          document.removeEventListener('touchmove', preventDefaultScroll);
+          document.removeEventListener('touchmove', handleGlobalMove);
       };
-  }, [isFocused, isMobile, showNotification, t.canvas.scrollWarning_mobile]);
+  }, [isFocused, showNotification, t.canvas.autoExit, onFocusChange]);
 
 
   // Toggle Focus Logic
@@ -101,7 +111,14 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
 
   const togglePanMode = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation(); 
-    setIsPanMode(!isPanMode);
+    e.preventDefault();
+    const newMode = !isPanMode;
+    setIsPanMode(newMode);
+    hasToggledPan.current = true;
+    setShowPanHint(false);
+    
+    // Provide Feedback
+    showNotification(newMode ? t.canvas.switchedToPan : t.canvas.switchedToRotate, 1500);
   };
 
   // 3D Projection Helpers
@@ -254,32 +271,29 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   useEffect(() => {
     const handleGlobalWheel = (e: WheelEvent) => {
       if (!isFocused) return;
-      e.preventDefault(); 
-      e.stopPropagation();
-
+      
       const container = containerRef.current;
       const isOverCanvas = container && container.contains(e.target as Node);
 
       if (isOverCanvas) {
+         // Inside Canvas: Zoom
+         e.preventDefault(); 
+         e.stopPropagation();
          const zoomSensitivity = 0.001;
          const zoomFactor = -e.deltaY * zoomSensitivity * 0.5;
          setScale(prev => Math.max(0.2, Math.min(5, prev + zoomFactor)));
       } else {
-         // Desktop scroll warning
-         if (!isMobile) {
-             const now = Date.now();
-             if (now - lastScrollWarningTime.current > 1500) {
-                 showNotification(t.canvas.scrollWarning);
-                 lastScrollWarningTime.current = now;
-             }
-         }
+         // Outside Canvas: User wants to scroll page
+         // Unlock interaction automatically
+         onFocusChange(false);
+         showNotification(t.canvas.autoExit, 1500);
       }
     };
     
     // Add non-passive listener to prevent default scroll
     window.addEventListener('wheel', handleGlobalWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleGlobalWheel);
-  }, [isFocused, showNotification, t, isMobile]);
+  }, [isFocused, showNotification, t, isMobile, onFocusChange]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isFocused) { toggleFocus(); return; }
@@ -366,6 +380,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
 
   const resetView = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     setRotation({ x: -15, y: 30 });
     setScale(1.0);
     setPan({ x: 0, y: 0 }); 
@@ -415,29 +430,49 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
             {/* BOTTOM GRADIENT MASK */}
             <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent pointer-events-none rounded-b-lg z-10" />
 
+            {/* CENTERED OVERLAY FOR HINTS - New Request: Center of whole page/screen */}
+            {isFocused && showPanHint && (
+                <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[110] pointer-events-none flex flex-col items-center justify-center animate-fade-in">
+                    <div className="bg-black/70 backdrop-blur-md border border-white/20 p-4 rounded-xl shadow-2xl flex flex-col items-center gap-2">
+                        <Hand size={32} className="text-amber-400 animate-pulse"/>
+                        <span className="text-white font-bold text-sm tracking-wide text-center">
+                            {t.tooltips.tryToggle}
+                        </span>
+                        <div className="w-0 h-0 border-x-[8px] border-x-transparent border-t-[8px] border-t-black/70 mt-2 opacity-50"></div>
+                    </div>
+                </div>
+            )}
+
             {/* Overlay Controls */}
             <div className={`absolute top-0 left-0 w-full p-4 flex justify-between pointer-events-none transition-opacity duration-300 ${isFocused || 'group-hover:opacity-100 opacity-0'}`}>
-                <div className="pointer-events-auto">
+                <div className="pointer-events-auto relative z-[120]">
                     {isFocused && (
-                        <button
-                            onClick={togglePanMode}
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onTouchStart={(e) => e.stopPropagation()} 
-                            className={`
-                                p-3 rounded-full shadow-xl border backdrop-blur-md transition-all active:scale-95 flex items-center justify-center
-                                ${isPanMode 
-                                    ? 'bg-sciblue-600 text-white border-sciblue-300 shadow-[0_0_20px_rgba(14,165,233,0.6)] scale-110' 
-                                    : 'bg-white/10 text-white border-white/20 hover:bg-white/20 hover:scale-105'
-                                }
-                            `}
-                            title={isPanMode ? t.tooltips.rotateMode : t.tooltips.panMode}
-                        >
-                            {isPanMode ? <Hand size={22} strokeWidth={2.5} /> : <Rotate3d size={22} strokeWidth={2} />}
-                        </button>
+                        <>
+                            <button
+                                onClick={togglePanMode}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onTouchStart={(e) => e.stopPropagation()} 
+                                className={`
+                                    p-3 rounded-full shadow-xl border backdrop-blur-md transition-all active:scale-95 flex items-center justify-center relative
+                                    ${isPanMode 
+                                        ? 'bg-sciblue-600 text-white border-sciblue-300 shadow-[0_0_20px_rgba(14,165,233,0.6)] scale-110' 
+                                        : 'bg-white/10 text-white border-white/20 hover:bg-white/20 hover:scale-105'
+                                    }
+                                `}
+                                title={isPanMode ? t.tooltips.rotateMode : t.tooltips.panMode}
+                            >
+                                {isPanMode ? <Hand size={22} strokeWidth={2.5} /> : <Rotate3d size={22} strokeWidth={2} />}
+                                
+                                {/* Pulse Effect when hint is active */}
+                                {showPanHint && (
+                                    <span className="absolute inset-0 rounded-full ring-4 ring-amber-400/50 animate-ping"></span>
+                                )}
+                            </button>
+                        </>
                     )}
                 </div>
 
-                <div className="pointer-events-auto">
+                <div className="pointer-events-auto z-[120]">
                     <button 
                         onClick={resetView}
                         onMouseDown={(e) => e.stopPropagation()}

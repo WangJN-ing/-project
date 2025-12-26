@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun, ArrowLeft } from 'lucide-react';
+import { Play, Pause, RotateCcw, Box, Activity, Globe, ChevronRight, Lock, Unlock, MousePointer2, User, Atom, AlertCircle, CheckCircle2, PanelLeftClose, SlidersHorizontal, X, Undo2, LayoutDashboard, Moon, Sun, ArrowLeft, Save, Download, Trash2, Archive, Pencil, ShieldCheck, ChevronDown } from 'lucide-react';
 import { PhysicsEngine } from './services/PhysicsEngine';
-import { SimulationParams, SimulationStats, ChartData, LanguageCode } from './types';
+import { SimulationParams, SimulationStats, ChartData, LanguageCode, SavedConfig } from './types';
 import { translations } from './services/translations';
 import SimulationCanvas from './components/SimulationCanvas';
 import CollapsibleCard from './components/CollapsibleCard';
@@ -40,10 +40,20 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [needsReset, setNeedsReset] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // SECTION COLLAPSE STATES
+  // Default: Storage Collapsed (false), Params Expanded (true)
+  const [isStorageOpen, setIsStorageOpen] = useState(false);
+  const [isParamsOpen, setIsParamsOpen] = useState(true);
   
   // New State: Mobile Hint Guide & Interaction Tracking
   const [showMobileHint, setShowMobileHint] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+
+  // Storage State
+  const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
+  const [newConfigName, setNewConfigName] = useState('');
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
   const [stats, setStats] = useState<SimulationStats>({
     time: 0, temperature: 0, pressure: 0, meanSpeed: 0, rmsSpeed: 0,
@@ -55,6 +65,7 @@ function App() {
 
   // Interaction State
   const [isCanvasLocked, setIsCanvasLocked] = useState(false);
+  
   const [notification, setNotification] = useState<{text: string, visible: boolean, type?: 'info'|'success'|'warning'}>({ text: '', visible: false, type: 'info' });
   const notificationTimeoutRef = useRef<number>(0);
 
@@ -66,12 +77,19 @@ function App() {
   const reqRef = useRef<number>(0);
   const frameCountRef = useRef<number>(0);
 
+  // Define Immutable System Preset
+  const SYSTEM_PRESET: SavedConfig = {
+      id: 'system_preset_001',
+      name: t.storage.systemPresetName,
+      params: DEFAULT_PARAMS,
+      date: 0,
+      isSystem: true
+  };
+
   // Dark Mode Logic
   useEffect(() => {
-    // Check local storage or system preference
     const storedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
     if (storedTheme === 'dark' || (!storedTheme && systemPrefersDark)) {
         setIsDarkMode(true);
         document.documentElement.classList.add('dark');
@@ -98,20 +116,42 @@ function App() {
     const checkMobile = () => {
         const mobile = window.innerWidth < 768;
         setIsMobile(mobile);
-        // FORCE CLOSE SIDEBAR ON MOBILE INIT
-        if (mobile) {
-            setIsSidebarOpen(false);
-        }
+        if (mobile) setIsSidebarOpen(false);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Mobile Hint Timer Logic - Optimized
+  // Storage Logic: Load on Mount (Merge System + Local)
+  useEffect(() => {
+    // Ensure the system preset name updates with language change
+    const currentSystemPreset = { ...SYSTEM_PRESET, name: t.storage.systemPresetName };
+    
+    const saved = localStorage.getItem('hsl_favorites');
+    let loadedConfigs: SavedConfig[] = [];
+    if (saved) {
+        try {
+            // Filter out any old system presets saved to LS by mistake to avoid duplicates
+            loadedConfigs = JSON.parse(saved).filter((c: SavedConfig) => !c.isSystem);
+        } catch(e) { console.error("Failed to load configs", e); }
+    }
+    setSavedConfigs([currentSystemPreset, ...loadedConfigs]);
+
+    // Load Custom Default
+    const customDefault = localStorage.getItem('hsl_custom_default');
+    if (customDefault) {
+        try {
+            const parsed = JSON.parse(customDefault);
+            setParams(parsed);
+            setActiveParams(parsed); 
+        } catch(e) { console.error("Failed to load default", e); }
+    }
+  }, [lang]); // Re-run when lang changes to update System Preset name
+
+  // Mobile Hint Timer Logic
   useEffect(() => {
     let timer: number;
-    // Show hint only if: Mobile + Sidebar Closed + Not Running + Never Interacted + After 2 seconds delay
     if (isMobile && !isSidebarOpen && !isRunning && !hasUserInteracted) {
         timer = window.setTimeout(() => {
             setShowMobileHint(true);
@@ -124,7 +164,6 @@ function App() {
 
   // Initial Load & Animation smoothing
   useEffect(() => {
-    // Determine visitor count
     const storedCount = localStorage.getItem('hs_visitor_count');
     const storedDate = localStorage.getItem('hs_visitor_date');
     const today = new Date().toDateString();
@@ -142,11 +181,11 @@ function App() {
     setVisitorCount(finalCount);
     
     // Init Engine
+    // Note: If we loaded custom params, params is already set. engine uses current params state.
     engineRef.current = new PhysicsEngine(params);
     setChartData(engineRef.current.getHistogramData(false));
     setNeedsReset(false);
 
-    // Show toast slightly later
     setTimeout(() => {
         setShowVisitorToast(true);
         setTimeout(() => setShowVisitorToast(false), 6000);
@@ -161,18 +200,121 @@ function App() {
     }, duration);
   };
 
+  // --- Interaction Checker ---
+  const checkInteractionLock = (e?: React.MouseEvent) => {
+      if (isCanvasLocked) {
+          if (e) e.stopPropagation();
+          showNotification(t.canvas.interactionLocked, 2000, 'warning');
+          return true;
+      }
+      return false;
+  };
+
+  // --- Storage Handlers ---
+  const handleSaveConfig = () => {
+      if (!newConfigName.trim()) {
+          showNotification(t.messages.checkInputs, 1500, 'warning');
+          return;
+      }
+      const newConfig: SavedConfig = {
+          id: Date.now().toString(),
+          name: newConfigName.trim(),
+          params: { ...params },
+          date: Date.now(),
+          isSystem: false
+      };
+      
+      // Keep system preset at top, add new user config
+      const userConfigs = savedConfigs.filter(c => !c.isSystem);
+      const updated = [savedConfigs[0], ...userConfigs, newConfig]; 
+      
+      setSavedConfigs(updated);
+      localStorage.setItem('hsl_favorites', JSON.stringify([...userConfigs, newConfig]));
+      setNewConfigName('');
+      // Auto-select the newly saved config
+      setSelectedPresetId(newConfig.id);
+      showNotification(t.storage.saveSuccess, 2000, 'success');
+  };
+
+  const handleSelectPreset = (config: SavedConfig) => {
+      setSelectedPresetId(config.id);
+      // Automatically load parameters when selected
+      setParams(config.params);
+      setNeedsReset(true);
+  };
+
+  const handleDeleteConfig = (id: string, e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation(); // Prevent selection when deleting
+      if(confirm(t.storage.confirmDelete)) {
+          const userConfigs = savedConfigs.filter(c => !c.isSystem && c.id !== id);
+          // Re-add system preset + remaining user configs
+          setSavedConfigs([savedConfigs[0], ...userConfigs]);
+          localStorage.setItem('hsl_favorites', JSON.stringify(userConfigs));
+          if (selectedPresetId === id) setSelectedPresetId(null);
+      }
+  };
+
+  const handleRenameConfig = (id: string, currentName: string, e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation(); // Prevent selection when renaming
+      const newName = prompt(t.storage.rename, currentName);
+      if (newName && newName.trim() !== "") {
+          const updated = savedConfigs.map(c => {
+              if (c.id === id && !c.isSystem) {
+                  return { ...c, name: newName.trim() };
+              }
+              return c;
+          });
+          setSavedConfigs(updated);
+          localStorage.setItem('hsl_favorites', JSON.stringify(updated.filter(c => !c.isSystem)));
+          showNotification(t.storage.renameSuccess, 2000, 'success');
+      }
+  };
+
+  const handleSetCustomDefault = () => {
+      if (!selectedPresetId) {
+          showNotification(t.storage.selectFirst, 2000, 'warning');
+          return;
+      }
+      
+      const configToSet = savedConfigs.find(c => c.id === selectedPresetId);
+      if (configToSet) {
+          localStorage.setItem('hsl_custom_default', JSON.stringify(configToSet.params));
+          showNotification(t.storage.defaultSet, 2000, 'success');
+      }
+  };
+
+  // --- Standard Handlers ---
   const handleParamChange = (key: keyof SimulationParams, valueStr: string) => {
       let val = valueStr === '' ? NaN : parseFloat(valueStr);
       setParams(prev => ({...prev, [key]: val}));
       setNeedsReset(true); 
   };
   
-  const handleRestoreDefaults = () => {
-      setParams(DEFAULT_PARAMS);
+  const handleRestoreDefaults = (e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      if(checkInteractionLock(e)) return;
+
+      // FIXED LOGIC: Check for custom default first
+      const customDefault = localStorage.getItem('hsl_custom_default');
+      if (customDefault) {
+          try {
+              const parsed = JSON.parse(customDefault);
+              setParams(parsed);
+              showNotification(t.storage.loadSuccess, 2000, 'success');
+          } catch(err) {
+              setParams(DEFAULT_PARAMS);
+          }
+      } else {
+          setParams(DEFAULT_PARAMS);
+      }
       setNeedsReset(true);
   };
 
-  const handleReset = () => {
+  const handleReset = (e?: React.MouseEvent) => {
+    if(checkInteractionLock(e)) return;
+    
     if (isRunning) {
         showNotification(t.messages.pauseRequired, 2500, 'warning');
         return;
@@ -203,8 +345,9 @@ function App() {
     }
   };
 
-  const handleStartPause = () => {
-      setHasUserInteracted(true); // User has engaged, stop hints
+  const handleStartPause = (e?: React.MouseEvent) => {
+      // NOTE: Removed checkInteractionLock check here to allow start/pause during interaction
+      setHasUserInteracted(true);
       
       if (needsReset) {
           showNotification(t.messages.resetRequired, 2500, 'warning');
@@ -223,10 +366,16 @@ function App() {
       }
   };
 
-  const handleOpenSidebar = () => {
+  const handleOpenSidebar = (e?: React.MouseEvent) => {
+      if(checkInteractionLock(e)) return;
       setIsSidebarOpen(true);
-      setHasUserInteracted(true); // User has engaged, stop hints
+      setHasUserInteracted(true); 
   };
+  
+  const handleCloseSidebar = (e?: React.MouseEvent) => {
+      if(checkInteractionLock(e)) return;
+      setIsSidebarOpen(false);
+  }
 
   const tick = useCallback(() => {
     if (!engineRef.current || !isRunning) return;
@@ -277,6 +426,18 @@ function App() {
   return (
     <div className="h-screen w-screen font-sans flex overflow-hidden relative selection:bg-sciblue-200 selection:text-sciblue-900 dark:selection:bg-sciblue-900 dark:selection:text-sciblue-100 transition-colors duration-500">
       
+      {/* GLOBAL INTERACTION LOCK BACKDROP - z-[90] */}
+      {isCanvasLocked && (
+        <div 
+            className="fixed inset-0 z-[90] bg-black/0 cursor-crosshair" 
+            onClick={(e) => {
+                e.stopPropagation();
+                setIsCanvasLocked(false);
+            }}
+            title={t.canvas.clickToRelease}
+        />
+      )}
+
       {/* --- SIDEBAR (CONTROLS) --- */}
       <div 
         className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity duration-500 md:hidden ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
@@ -285,146 +446,252 @@ function App() {
 
       <aside 
         className={`
-            fixed md:relative z-50 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl md:shadow-none
+            fixed md:relative z-[45] h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl md:shadow-none
             transition-[width,transform,background-color] duration-500 cubic-bezier(0.25, 1, 0.5, 1) flex flex-col
-            ${isSidebarOpen ? 'w-[280px] translate-x-0' : 'w-0 -translate-x-full md:w-0 md:translate-x-0'}
+            ${isSidebarOpen ? 'w-[300px] translate-x-0' : 'w-0 -translate-x-full md:w-0 md:translate-x-0'}
             overflow-hidden
         `}
       >
-        {/* Added safe-area padding for mobile: pt-14 */}
-        <div className="w-[280px] min-w-[280px] h-full flex flex-col p-5 pt-14 md:pt-5 overflow-y-auto">
-            {/* Sidebar Header */}
-            <div className="flex flex-col gap-6 mb-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 select-none">
-                         {/* UPDATED ICON: Match floating button style */}
-                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sciblue-500 to-indigo-600 flex items-center justify-center border border-white/20 text-white shadow-inner">
-                            <Atom size={18} />
-                         </div>
-                         <div className="flex flex-col leading-none">
-                           <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">{t.brand.name}</span>
-                           <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.brand.subtitle}</span>
+        {/* NEW LAYOUT: Flex Column Container to Pin Footer */}
+        <div className="w-[300px] min-w-[300px] h-full flex flex-col bg-white dark:bg-slate-900">
+            
+            {/* 1. TOP & MIDDLE: Header + Scrollable Parameters */}
+            {/* Added scrollbar-gutter: stable to prevent width jitter when content changes height */}
+            <div 
+                className="flex-1 overflow-y-auto min-h-0 flex flex-col"
+                style={{ scrollbarGutter: 'stable' }}
+            >
+                <div className="p-5 pt-14 md:pt-5 pb-2">
+                    
+                    {/* Header */}
+                    <div className="flex flex-col gap-6 mb-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 select-none">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sciblue-500 to-indigo-600 flex items-center justify-center border border-white/20 text-white shadow-inner">
+                                    <Atom size={18} />
+                                </div>
+                                <div className="flex flex-col leading-none">
+                                <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">{t.brand.name}</span>
+                                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.brand.subtitle}</span>
+                                </div>
+                            </div>
+                            <button onClick={handleCloseSidebar} className={`p-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors ${isCanvasLocked ? 'opacity-50 cursor-not-allowed' : ''}`} title={t.tooltips.closeSidebar}>
+                                <X size={18}/>
+                            </button>
                         </div>
                     </div>
-                    <button onClick={() => setIsSidebarOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors" title={t.tooltips.closeSidebar}>
-                        <X size={18}/>
-                    </button>
-                </div>
 
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider">
-                        <SlidersHorizontal size={14} className="text-slate-400 dark:text-slate-500"/> {t.controls.title}
+                    {/* Inputs Group */}
+                    <div className={`space-y-4 ${isCanvasLocked ? 'opacity-50 pointer-events-none' : ''}`}>
+                        
+                        {/* STORAGE SECTION (COLLAPSIBLE) */}
+                        <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
+                            <div 
+                                onClick={() => setIsStorageOpen(!isStorageOpen)}
+                                className="flex items-center justify-between cursor-pointer group mb-2 py-1 select-none"
+                            >
+                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider group-hover:text-sciblue-600 dark:group-hover:text-sciblue-400 transition-colors">
+                                    <Archive size={14} className="text-slate-400 dark:text-slate-500 group-hover:text-sciblue-500 transition-colors group-hover:scale-110 duration-300"/> 
+                                    {t.storage.title}
+                                </div>
+                                <div className="p-1 rounded-full group-hover:bg-slate-100 dark:group-hover:bg-slate-800 transition-colors">
+                                    <ChevronDown 
+                                        size={14} 
+                                        className={`text-slate-400 dark:text-slate-500 transition-transform duration-300 ${isStorageOpen ? 'rotate-180 text-sciblue-500' : 'rotate-0'}`}
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Smoother cubic-bezier transition for collapse */}
+                            <div className={`overflow-hidden transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isStorageOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                {/* Save Current */}
+                                <div className="flex gap-2 mb-3 mt-1 px-0.5">
+                                    <input 
+                                        type="text" 
+                                        placeholder={t.storage.placeholder}
+                                        value={newConfigName}
+                                        onChange={(e) => setNewConfigName(e.target.value)}
+                                        className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-sciblue-500"
+                                    />
+                                    <button onClick={handleSaveConfig} className="bg-slate-100 dark:bg-slate-800 hover:bg-sciblue-500 hover:text-white text-slate-500 dark:text-slate-400 p-1.5 rounded-md border border-slate-200 dark:border-slate-700 transition-colors shadow-sm">
+                                        <Save size={16} />
+                                    </button>
+                                </div>
+
+                                {/* Default Button */}
+                                <button 
+                                    onClick={handleSetCustomDefault} 
+                                    className="w-full mb-3 text-[10px] text-slate-400 hover:text-sciblue-600 dark:hover:text-sciblue-400 flex items-center justify-center gap-1 py-1 border border-dashed border-slate-200 dark:border-slate-700 rounded hover:border-sciblue-300 transition-colors group"
+                                    title={t.storage.setDefault}
+                                >
+                                    <CheckCircle2 size={10} className="text-slate-300 group-hover:text-sciblue-500 transition-colors"/> 
+                                    <span className="group-hover:font-semibold transition-all">{t.storage.setDefault}</span>
+                                </button>
+
+                                {/* List */}
+                                <div className="space-y-2 pb-2 px-0.5">
+                                    {savedConfigs.length === 1 && <div className="text-[10px] text-center text-slate-400 italic py-2">{t.storage.empty}</div>}
+                                    {savedConfigs.map(config => (
+                                        <div 
+                                            key={config.id} 
+                                            onClick={() => handleSelectPreset(config)}
+                                            className={`
+                                                relative flex items-center justify-between p-2 rounded border cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-sm group
+                                                ${selectedPresetId === config.id 
+                                                    ? 'bg-sciblue-50 dark:bg-sciblue-900/20 border-sciblue-400 dark:border-sciblue-600 ring-1 ring-sciblue-400 dark:ring-sciblue-600' 
+                                                    : config.isSystem 
+                                                        ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/30' 
+                                                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800'
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                {config.isSystem ? <ShieldCheck size={12} className="text-indigo-400 shrink-0"/> : null}
+                                                <span className={`text-xs font-medium truncate max-w-[100px] ${config.isSystem ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300'}`}>{config.name}</span>
+                                            </div>
+                                            <div className="flex gap-1 relative z-10">
+                                                {!config.isSystem && (
+                                                    <>
+                                                        <button 
+                                                            onClick={(e) => handleRenameConfig(config.id, config.name, e)} 
+                                                            className="text-slate-400 hover:text-sciblue-500 hover:bg-slate-200 dark:hover:bg-slate-700 p-1 rounded transition-colors" 
+                                                            title={t.storage.rename}
+                                                        >
+                                                            <Pencil size={12}/>
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => handleDeleteConfig(config.id, e)} 
+                                                            className="text-rose-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 p-1 rounded transition-colors" 
+                                                            title={t.storage.delete}
+                                                        >
+                                                            <Trash2 size={12}/>
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* PARAMETER SECTION (COLLAPSIBLE) */}
+                        <div className="pt-2">
+                            <div 
+                                onClick={() => setIsParamsOpen(!isParamsOpen)}
+                                className="flex items-center justify-between cursor-pointer group mb-2 py-1 select-none"
+                            >
+                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider group-hover:text-sciblue-600 dark:group-hover:text-sciblue-400 transition-colors">
+                                    <SlidersHorizontal size={14} className="text-slate-400 dark:text-slate-500 group-hover:text-sciblue-500 transition-colors group-hover:scale-110 duration-300"/> 
+                                    <span>{t.controls.title}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                     <button 
+                                        onClick={handleRestoreDefaults}
+                                        disabled={isRunning}
+                                        className={`text-[10px] font-medium flex items-center gap-1 py-0.5 px-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors z-10 relative ${isRunning ? 'text-slate-300 dark:text-slate-600' : isCanvasLocked ? 'text-slate-400 dark:text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-500 dark:text-slate-400'}`}
+                                        title={t.controls.restoreDefaults}
+                                    >
+                                        <Undo2 size={12}/> {t.controls.default}
+                                    </button>
+                                    <div className="p-1 rounded-full group-hover:bg-slate-100 dark:group-hover:bg-slate-800 transition-colors">
+                                        <ChevronDown 
+                                            size={14} 
+                                            className={`text-slate-400 dark:text-slate-500 transition-transform duration-300 ${isParamsOpen ? 'rotate-180 text-sciblue-500' : 'rotate-0'}`}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Smoother cubic-bezier transition for collapse */}
+                            <div className={`overflow-hidden transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isParamsOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                <div className="space-y-2 pb-2 px-0.5">
+                                    {[
+                                    { key: 'N', label: t.controls.particles, step: 1 },
+                                    { key: 'r', label: t.controls.radius, step: 0.05 },
+                                    { key: 'L', label: t.controls.boxSize, step: 1 },
+                                    { key: 'equilibriumTime', label: t.controls.equilTime },
+                                    { key: 'statsDuration', label: t.controls.statsDuration },
+                                    ].map((field) => (
+                                        <div key={field.key} className="group relative last:mb-0">
+                                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase block mb-1">{field.label}</label>
+                                            <div className="relative">
+                                                <input 
+                                                type="number" step={field.step}
+                                                value={isNaN(params[field.key as keyof SimulationParams]) ? '' : params[field.key as keyof SimulationParams]}
+                                                disabled={isRunning || isCanvasLocked}
+                                                onChange={(e) => handleParamChange(field.key as keyof SimulationParams, e.target.value)}
+                                                className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 font-mono outline-none transition-all focus:bg-white dark:focus:bg-slate-700 ${isRunning ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-900' : 'focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500/20 hover:border-slate-300 dark:hover:border-slate-600'}`}
+                                                />
+                                                {isRunning && <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"/>}
+                                            </div>
+                                            {isRunning && <div className="absolute inset-0 z-10 cursor-not-allowed" onClick={() => showNotification(t.messages.pauseRequired, 2000, 'warning')} />}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            {/* 2. BOTTOM BUTTONS (PINNED TO BOTTOM, NO OVERLAY) */}
+            <div className="flex-none p-5 pt-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-10">
+                 <div className="flex flex-col gap-3">
                     <button 
-                        onClick={handleRestoreDefaults}
-                        disabled={isRunning}
-                        className={`text-[10px] font-medium flex items-center gap-1 py-1 px-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${isRunning ? 'text-slate-300 dark:text-slate-600' : 'text-slate-500 dark:text-slate-400'}`}
-                        title={t.controls.restoreDefaults}
+                        onClick={handleStartPause}
+                        disabled={needsReset} 
+                        className={`
+                            w-full font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all text-sm shadow-sm
+                            ${needsReset 
+                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700' 
+                                : !isRunning 
+                                    ? 'bg-slate-900 dark:bg-sciblue-600 hover:bg-slate-800 dark:hover:bg-sciblue-500 text-white active:scale-95'
+                                    : 'bg-white dark:bg-slate-800 border-2 border-amber-500 text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-slate-700'
+                            }
+                            ${isCanvasLocked ? 'hover:scale-105 shadow-md ring-2 ring-sciblue-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-900' : ''}
+                        `}
+                        title={isRunning ? t.controls.pause : t.controls.start}
                     >
-                        <Undo2 size={12}/> {t.controls.default}
-                    </button>
-                </div>
-            </div>
-
-            {/* Inputs Group */}
-            <div className="space-y-4 flex-1">
-                 {/* Input Fields - Cleaner Look */}
-                 {[
-                   { key: 'N', label: t.controls.particles, step: 1 },
-                   { key: 'r', label: t.controls.radius, step: 0.05 },
-                   { key: 'L', label: t.controls.boxSize, step: 1 },
-                 ].map((field) => (
-                    <div key={field.key} className="group relative">
-                        <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase block mb-1.5">{field.label}</label>
-                        <div className="relative">
-                            <input 
-                            type="number" step={field.step}
-                            value={isNaN(params[field.key as keyof SimulationParams]) ? '' : params[field.key as keyof SimulationParams]}
-                            disabled={isRunning}
-                            onChange={(e) => handleParamChange(field.key as keyof SimulationParams, e.target.value)}
-                            className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-700 dark:text-slate-200 font-mono outline-none transition-all focus:bg-white dark:focus:bg-slate-700 ${isRunning ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-900' : 'focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500/20 hover:border-slate-300 dark:hover:border-slate-600'}`}
-                            />
-                            {isRunning && <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"/>}
-                        </div>
-                        {isRunning && <div className="absolute inset-0 z-10 cursor-not-allowed" onClick={() => showNotification(t.messages.pauseRequired, 2000, 'warning')} />}
-                    </div>
-                 ))}
-
-                 <div className="h-px bg-slate-100 dark:bg-slate-800 my-2"></div>
-
-                 {[
-                   { key: 'equilibriumTime', label: t.controls.equilTime },
-                   { key: 'statsDuration', label: t.controls.statsDuration },
-                 ].map((field) => (
-                    <div key={field.key} className="group relative">
-                        <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase block mb-1.5">{field.label}</label>
-                        <div className="relative">
-                            <input 
-                            type="number" 
-                            value={isNaN(params[field.key as keyof SimulationParams]) ? '' : params[field.key as keyof SimulationParams]}
-                            disabled={isRunning}
-                            onChange={(e) => handleParamChange(field.key as keyof SimulationParams, e.target.value)}
-                            className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-700 dark:text-slate-200 font-mono outline-none transition-all focus:bg-white dark:focus:bg-slate-700 ${isRunning ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-900' : 'focus:border-sciblue-500 focus:ring-1 focus:ring-sciblue-500/20 hover:border-slate-300 dark:hover:border-slate-600'}`}
-                            />
-                            {isRunning && <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"/>}
-                        </div>
-                         {isRunning && <div className="absolute inset-0 z-10 cursor-not-allowed" onClick={() => showNotification(t.messages.pauseRequired, 2000, 'warning')} />}
-                    </div>
-                 ))}
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="mt-8 flex flex-col gap-3 pb-8 md:pb-0">
-                 <button 
-                     onClick={handleStartPause}
-                     disabled={needsReset} 
-                     className={`
-                        w-full font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all text-sm shadow-sm
-                        ${needsReset 
-                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700' 
-                            : !isRunning 
-                                ? 'bg-slate-900 dark:bg-sciblue-600 hover:bg-slate-800 dark:hover:bg-sciblue-500 text-white active:scale-95'
-                                : 'bg-white dark:bg-slate-800 border-2 border-amber-500 text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-slate-700'
+                        {!isRunning ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />} 
+                        {isRunning 
+                            ? t.controls.pause 
+                            : (stats.time > 0 && !needsReset) ? t.controls.resume : t.controls.start
                         }
-                     `}
-                     title={isRunning ? t.controls.pause : t.controls.start}
-                 >
-                     {!isRunning ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />} 
-                     {isRunning 
-                        ? t.controls.pause 
-                        : (stats.time > 0 && !needsReset) ? t.controls.resume : t.controls.start
-                     }
-                 </button>
-                 
-                 <button 
-                   onClick={handleReset}
-                   className={`
-                      w-full font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all border text-sm
-                      ${isRunning 
-                        ? 'bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 border-slate-100 dark:border-slate-800 cursor-not-allowed'
-                        : needsReset 
-                            ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:border-amber-300 shadow-sm' 
-                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
-                      }
-                   `}
-                   title={t.controls.reset}
-                 >
-                   <RotateCcw size={16} className={needsReset ? "animate-spin-slow" : ""} /> {t.controls.reset}
-                 </button>
-                 
-                 <button 
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="hidden md:flex items-center justify-center gap-2 mt-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-sciblue-600 dark:hover:text-sciblue-400 transition-colors py-2 uppercase tracking-widest"
-                    title={t.common.collapse}
-                 >
-                    <PanelLeftClose size={12}/> {t.common.collapse}
-                 </button>
+                    </button>
+                    
+                    <button 
+                    onClick={handleReset}
+                    className={`
+                        w-full font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all border text-sm
+                        ${isRunning 
+                            ? 'bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 border-slate-100 dark:border-slate-800 cursor-not-allowed'
+                            : needsReset 
+                                ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:border-amber-300 shadow-sm' 
+                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
+                        }
+                        ${isCanvasLocked ? 'opacity-50 cursor-not-allowed hover:bg-auto' : ''}
+                    `}
+                    title={t.controls.reset}
+                    >
+                    <RotateCcw size={16} className={needsReset ? "animate-spin-slow" : ""} /> {t.controls.reset}
+                    </button>
+                    
+                    <button 
+                        onClick={handleCloseSidebar}
+                        className={`hidden md:flex items-center justify-center gap-2 mt-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-sciblue-600 dark:hover:text-sciblue-400 transition-colors py-2 uppercase tracking-widest ${isCanvasLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={t.common.collapse}
+                    >
+                        <PanelLeftClose size={12}/> {t.common.collapse}
+                    </button>
+                 </div>
             </div>
         </div>
       </aside>
 
       {/* --- MAIN CONTENT AREA --- */}
-      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative flex flex-col z-0 scroll-smooth">
+      {/* REMOVED Z-0 TO FIX STACKING CONTEXT ISSUE WITH BACKDROP */}
+      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative flex flex-col scroll-smooth">
         
         {/* Modern Header Area */}
         {/* Landscape Optimization: Reduced top/bottom padding to maximize vertical space */}
@@ -450,25 +717,27 @@ function App() {
         {/* Content Container */}
         <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-10 landscape:pb-4 space-y-6">
             
-            {/* 3D View Card */}
-            <CollapsibleCard 
-              title={t.views.mdView} icon={<Box size={18} className="text-sciblue-600 dark:text-sciblue-400"/>} t={t}
-              isLocked={isCanvasLocked || isRunning} 
-              lockedWarningText={isRunning ? t.canvas.runningLocked : t.canvas.foldingLocked} 
-              showNotification={showNotification}
-              className="border-slate-200 shadow-sm bg-white"
-              expandText={t.common.expandView}
-            >
-               {/* PASS isMobile PROP */}
-               <SimulationCanvas 
-                  particles={engineRef.current?.particles || []} L={activeParams.L} r={activeParams.r} isRunning={isRunning} t={t}
-                  isFocused={isCanvasLocked} onFocusChange={setIsCanvasLocked} showNotification={(txt, dur) => showNotification(txt, dur, 'info')}
-                  isMobile={isMobile}
-               />
-               <div className="mt-4">
-                 <StatsPanel stats={stats} eqTime={params.equilibriumTime} statDuration={params.statsDuration} t={t} />
-               </div>
-            </CollapsibleCard>
+            {/* 3D View Card - Z-Index 100 when locked ensures it sits ABOVE the global z-[90] backdrop */}
+            <div className={`${isCanvasLocked ? 'relative z-[100]' : ''}`}>
+                <CollapsibleCard 
+                title={t.views.mdView} icon={<Box size={18} className="text-sciblue-600 dark:text-sciblue-400"/>} t={t}
+                isLocked={isCanvasLocked} // Only locked by interaction mode
+                lockedWarningText={t.canvas.foldingLocked} 
+                showNotification={showNotification}
+                className="border-slate-200 shadow-sm bg-white"
+                expandText={t.common.expandView}
+                >
+                {/* PASS isMobile PROP */}
+                <SimulationCanvas 
+                    particles={engineRef.current?.particles || []} L={activeParams.L} r={activeParams.r} isRunning={isRunning} t={t}
+                    isFocused={isCanvasLocked} onFocusChange={setIsCanvasLocked} showNotification={(txt, dur) => showNotification(txt, dur, 'info')}
+                    isMobile={isMobile}
+                />
+                <div className="mt-4">
+                    <StatsPanel stats={stats} eqTime={params.equilibriumTime} statDuration={params.statsDuration} t={t} />
+                </div>
+                </CollapsibleCard>
+            </div>
 
             {/* Realtime Monitor */}
             {!finalChartData ? (
@@ -504,19 +773,21 @@ function App() {
             
         </div>
         
-        {/* Footer Restored Here */}
-        <Footer t={t} showNotification={(msg, dur, type) => showNotification(msg, dur, type)} />
+        {/* Footer (Also check interaction lock on footer links if needed, but usually just footer actions) */}
+        <div onClick={(e) => { if(isCanvasLocked) { e.preventDefault(); e.stopPropagation(); showNotification(t.canvas.interactionLocked, 2000, 'warning'); } }}>
+             <Footer t={t} showNotification={(msg, dur, type) => showNotification(msg, dur, type)} />
+        </div>
 
         {/* --- FLOATING CONTROLS (Left Top) --- */}
         <div 
             className={`
-                fixed top-14 md:top-6 left-4 z-40 flex items-center gap-3 transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)
+                fixed top-14 md:top-6 left-4 z-50 flex items-center gap-3 transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)
                 ${!isSidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-[-150%] opacity-0 pointer-events-none'}
             `}
         >
             <div className="relative">
                 {/* Mobile Hint Ping Animation Layer */}
-                {showMobileHint && (
+                {showMobileHint && !isCanvasLocked && (
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sciblue-400 opacity-75"></span>
                 )}
                 
@@ -527,7 +798,8 @@ function App() {
                     // Added ring animation support for mobile hint
                     className={`
                         relative flex items-center gap-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md pr-3 pl-1 py-1 md:pr-5 md:pl-1.5 md:py-1.5 rounded-full border shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgb(14,165,233,0.15)] hover:scale-105 active:scale-95 transition-all group z-10
-                        ${showMobileHint ? 'border-sciblue-400 ring-2 ring-sciblue-400/30' : 'border-slate-200/60 dark:border-slate-700/60'}
+                        ${showMobileHint && !isCanvasLocked ? 'border-sciblue-400 ring-2 ring-sciblue-400/30' : 'border-slate-200/60 dark:border-slate-700/60'}
+                        ${isCanvasLocked ? 'opacity-50 cursor-not-allowed hover:scale-100' : ''}
                     `}
                 >
                      {/* Reduced size: w-6 h-6 on mobile */}
@@ -542,7 +814,7 @@ function App() {
                 </button>
 
                 {/* Mobile Tooltip Guide - MOVED INSIDE RELATIVE WRAPPER & POSITIONED BELOW */}
-                {showMobileHint && (
+                {showMobileHint && !isCanvasLocked && (
                    <div className="absolute top-full left-0 mt-2 flex flex-col items-start animate-fade-in pointer-events-none z-50 w-max">
                       {/* Arrow pointing up */}
                       <div className="w-0 h-0 border-x-[6px] border-x-transparent border-b-[8px] border-b-sciblue-500 ml-3 drop-shadow-sm"></div>
@@ -565,6 +837,7 @@ function App() {
                             ? 'bg-amber-500 border-amber-400 text-white hover:bg-amber-400 hover:shadow-amber-200/50' 
                             : 'bg-slate-800 dark:bg-sciblue-600 border-slate-700 dark:border-sciblue-500 text-white hover:bg-slate-700 dark:hover:bg-sciblue-500 hover:shadow-slate-300/50'
                         }
+                        ${isCanvasLocked ? 'opacity-50 cursor-not-allowed hover:bg-auto' : ''}
                     `}
                 >
                     {isRunning ? <Pause size={isMobile ? 14 : 18} fill="currentColor"/> : <Play size={isMobile ? 14 : 18} fill="currentColor" className="ml-0.5"/>}
@@ -601,13 +874,13 @@ function App() {
       </div>
 
       {/* RIGHT TOP CONTROLS: Dark Mode + Language */}
-      {/* Hide on Mobile when sidebar is open to prevent overlap with Sidebar Close button */}
+      {/* Increased z-index to 60 to stay above canvas interaction when locked */}
       <div className={`fixed top-14 right-4 md:top-6 md:right-6 z-[60] flex items-center gap-3 transition-opacity duration-300 ${isMobile && isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {/* Dark Mode Toggle */}
         <button 
             onClick={toggleDarkMode}
             className="flex items-center justify-center w-8 h-8 md:w-auto md:px-3 md:py-1.5 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-sciblue-400 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all active:scale-95 shadow-sm"
-            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            title={t.tooltips.themeToggle}
         >
             {isDarkMode ? <Moon size={16} /> : <Sun size={16} />}
             <span className="hidden md:inline-block text-xs font-bold tracking-wide ml-2">{isDarkMode ? t.common.modeDark : t.common.modeLight}</span>
@@ -615,7 +888,10 @@ function App() {
 
         {/* Language Menu */}
         <div className="group relative">
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all active:scale-95 shadow-sm">
+            <button 
+                title={t.tooltips.langToggle}
+                className="flex items-center gap-2 px-3 py-1.5 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all active:scale-95 shadow-sm"
+            >
                 <Globe size={16} />
                 {/* HIDDEN ON MOBILE */}
                 <span className="hidden md:inline-block text-xs font-bold tracking-wide">{t.header.language}</span>
