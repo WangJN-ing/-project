@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Translation } from '../types';
 import { Github, FileText, Mail, GraduationCap, Sparkles, Check, User } from 'lucide-react';
-import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
 
 interface FooterProps {
   t: Translation;
@@ -31,25 +29,13 @@ const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
     });
   };
 
-  // Handle PDF opening with Capacitor Browser
+  // Handle PDF opening - Standard Web Version
   const handleOpenPdf = async (e: React.MouseEvent) => {
     e.preventDefault();
     const pdfUrl = `${window.location.origin}/Project_Report.pdf`;
 
-    try {
-      if (Capacitor.isNativePlatform()) {
-          // Force opening in the System Browser / Drive Viewer on Android to avoid garbled text in WebView
-          await Browser.open({ url: pdfUrl, windowName: '_system' });
-      } else {
-          // Standard web behavior
-          window.open(pdfUrl, '_blank');
-      }
-    } catch (error) {
-      console.error("Failed to open PDF via Capacitor", error);
-      // Fallback
-      window.open('/Project_Report.pdf', '_blank');
-      showNotification("尝试打开 PDF...", 1000, 'info');
-    }
+    // Simply open in new tab
+    window.open(pdfUrl, '_blank');
   };
 
   // Header Style - Brightened to text-slate-300
@@ -169,7 +155,7 @@ const Footer: React.FC<FooterProps> = ({ t, showNotification }) => {
                     <span>{t.footer.github}</span>
                 </a>
                 
-                {/* PDF - UPDATED to use Capacitor Browser */}
+                {/* PDF */}
                 <a href="#" onClick={handleOpenPdf}
                    className="flex items-center gap-3 text-sm text-slate-300 hover:text-white transition-all group p-2 hover:bg-slate-800 rounded-lg -ml-2"
                 >
