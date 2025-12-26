@@ -53,10 +53,15 @@ export interface ChartData {
 export type LanguageCode = 'zh-CN' | 'zh-TW' | 'en-GB' | 'en-US';
 
 export interface Translation {
+  brand: {
+    name: string;
+    subtitle: string;
+  };
   title: string;
   subtitle: string;
   header: {
     systemOp: string;
+    language: string; // New: Language label
   };
   controls: {
     title: string;
@@ -71,6 +76,7 @@ export interface Translation {
     reset: string;
     resetNote: string;
     restoreDefaults: string;
+    default: string; // New: Short default button text
   };
   messages: {
     resetRequired: string;
@@ -148,7 +154,9 @@ export interface Translation {
     expandAll: string;
     collapse: string;
     openCard: string;  
-    closeCard: string; 
+    closeCard: string;
+    modeDark: string;  // New: Dark mode text
+    modeLight: string; // New: Light mode text
   };
   footer: {
     about: string;

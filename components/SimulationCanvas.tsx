@@ -330,7 +330,7 @@ const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   return (
     <div className="flex flex-col gap-2 relative">
         {/* Interaction Hint */}
-        <div className="flex justify-between items-center px-1 text-[10px] text-sciblue-600 uppercase tracking-widest font-bold">
+        <div className="flex justify-between items-center px-1 text-[10px] text-sciblue-600 dark:text-sciblue-400 uppercase tracking-widest font-bold">
             <span className="flex items-center gap-1">
                 {isFocused ? <Lock size={10}/> : <Unlock size={10}/>}
                 {isFocused ? t.canvas.locked.split('·')[0] : t.canvas.scrollEnabled}

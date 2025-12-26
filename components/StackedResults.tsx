@@ -6,9 +6,10 @@ import { ChevronUp, ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
 interface StackedResultsProps {
   data: ChartData;
   t: Translation;
+  isDarkMode?: boolean;
 }
 
-const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
+const StackedResults: React.FC<StackedResultsProps> = ({ data, t, isDarkMode = false }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,20 +36,20 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
   // Mobile Landscape: Force grid-cols-2 (side-by-side) to save vertical space
   const HistogramGroup = () => (
     <div className={`grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 gap-2 h-full ${isFullscreen ? 'p-4' : 'p-0 overflow-y-hidden'}`}>
-      <div className="bg-slate-50 rounded-lg p-2 border border-slate-100 flex flex-col justify-center">
-         <DistributionCharts data={data} type="speed" isFinal={true} t={t} heightClass={histHeight} />
+      <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+         <DistributionCharts data={data} type="speed" isFinal={true} t={t} heightClass={histHeight} isDarkMode={isDarkMode} />
       </div>
-      <div className="bg-slate-50 rounded-lg p-2 border border-slate-100 flex flex-col justify-center">
-         <DistributionCharts data={data} type="energy" isFinal={true} t={t} heightClass={histHeight} />
+      <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+         <DistributionCharts data={data} type="energy" isFinal={true} t={t} heightClass={histHeight} isDarkMode={isDarkMode} />
       </div>
     </div>
   );
 
   const cardGroups = [
     { id: 'histograms', content: <HistogramGroup />, title: t.charts.distributions },
-    { id: 'semilog', content: <DistributionCharts data={data} type="semilog" isFinal={true} t={t} heightClass={singleHeight} />, title: t.charts.semilog },
-    { id: 'totalEnergy', content: <DistributionCharts data={data} type="totalEnergy" t={t} heightClass={singleHeight} />, title: t.charts.totalEnergy },
-    { id: 'tempError', content: <DistributionCharts data={data} type="tempError" t={t} heightClass={singleHeight} />, title: t.charts.tempError },
+    { id: 'semilog', content: <DistributionCharts data={data} type="semilog" isFinal={true} t={t} heightClass={singleHeight} isDarkMode={isDarkMode} />, title: t.charts.semilog },
+    { id: 'totalEnergy', content: <DistributionCharts data={data} type="totalEnergy" t={t} heightClass={singleHeight} isDarkMode={isDarkMode} />, title: t.charts.totalEnergy },
+    { id: 'tempError', content: <DistributionCharts data={data} type="tempError" t={t} heightClass={singleHeight} isDarkMode={isDarkMode} />, title: t.charts.tempError },
   ];
 
   const handleNext = () => {
@@ -184,11 +185,11 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
         ref={containerRef} 
         // Landscape Optimization: h-[340px] for mobile landscape (usually ~360-400px height)
         // Mobile Portrait: h-[660px]
-        className={`relative transition-all duration-500 bg-white ${isFullscreen ? 'p-10 overflow-y-auto' : 'h-[660px] landscape:h-[340px] md:h-[400px] perspective-[1000px] select-none'}`}
+        className={`relative transition-all duration-500 bg-white dark:bg-slate-900 ${isFullscreen ? 'p-10 overflow-y-auto' : 'h-[660px] landscape:h-[340px] md:h-[400px] perspective-[1000px] select-none'}`}
     >
         <button 
             onClick={toggleFullscreen}
-            className="absolute top-3 right-3 z-50 p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all border border-slate-200"
+            className="absolute top-3 right-3 z-50 p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all border border-slate-200 dark:border-slate-700"
             title={isFullscreen ? t.common.collapse : t.common.expandAll}
         >
             {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
@@ -197,8 +198,8 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
         {isFullscreen ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-7xl mx-auto pt-10">
                 {cardGroups.map((group) => (
-                    <div key={group.id} className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-                         <h3 className="text-lg font-bold text-slate-800 mb-4 px-3 border-l-4 border-sciblue-500">{group.title}</h3>
+                    <div key={group.id} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-6 border border-slate-200 dark:border-slate-800">
+                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 px-3 border-l-4 border-sciblue-500">{group.title}</h3>
                         <div className="h-full">
                             {group.content}
                         </div>
@@ -220,14 +221,14 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
                     <div
                         key={group.id}
                         // Mobile Landscape Card: Adjusted to h-[300px] to fit within the h-[340px] container with margins
-                        className="absolute w-full max-w-4xl h-[600px] landscape:h-[300px] md:h-[360px] bg-white border border-slate-200 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
+                        className="absolute w-full max-w-4xl h-[600px] landscape:h-[300px] md:h-[360px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] dark:shadow-none overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
                         style={getCardStyle(index)}
                     >
                         <div className="h-6 w-full flex items-center justify-center cursor-ns-resize opacity-30 hover:opacity-60 shrink-0">
                              <div className="w-8 h-1 bg-slate-400 rounded-full"></div>
                         </div>
                         <div className="flex-1 px-3 pb-3 pt-0 relative flex flex-col min-h-0">
-                             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 select-none text-center">{group.title}</div>
+                             <div className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 select-none text-center">{group.title}</div>
                              <div className="flex-1 min-h-0 w-full relative">
                                 {group.content}
                              </div>
@@ -248,14 +249,14 @@ const StackedResults: React.FC<StackedResultsProps> = ({ data, t }) => {
                 >
                      <button 
                         onClick={handlePrev}
-                        className="pointer-events-auto w-10 h-10 md:w-8 md:h-8 bg-white shadow-lg md:shadow-sm rounded-full text-slate-500 hover:text-sciblue-600 hover:border-sciblue-200 hover:shadow-md transition-all border border-slate-200 active:scale-95 flex items-center justify-center"
+                        className="pointer-events-auto w-10 h-10 md:w-8 md:h-8 bg-white dark:bg-slate-800 shadow-lg md:shadow-sm rounded-full text-slate-500 dark:text-slate-400 hover:text-sciblue-600 dark:hover:text-sciblue-400 hover:border-sciblue-200 dark:hover:border-sciblue-800 hover:shadow-md transition-all border border-slate-200 dark:border-slate-700 active:scale-95 flex items-center justify-center"
                         title={t.common.prev}
                      >
                         <ChevronUp size={20} />
                      </button>
                      <button 
                         onClick={handleNext}
-                        className="pointer-events-auto w-10 h-10 md:w-8 md:h-8 bg-white shadow-lg md:shadow-sm rounded-full text-slate-500 hover:text-sciblue-600 hover:border-sciblue-200 hover:shadow-md transition-all border border-slate-200 active:scale-95 flex items-center justify-center"
+                        className="pointer-events-auto w-10 h-10 md:w-8 md:h-8 bg-white dark:bg-slate-800 shadow-lg md:shadow-sm rounded-full text-slate-500 dark:text-slate-400 hover:text-sciblue-600 dark:hover:text-sciblue-400 hover:border-sciblue-200 dark:hover:border-sciblue-800 hover:shadow-md transition-all border border-slate-200 dark:border-slate-700 active:scale-95 flex items-center justify-center"
                         title={t.common.next}
                      >
                         <ChevronDown size={20} />

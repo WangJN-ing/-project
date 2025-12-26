@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
+        darkMode: 'class', // Enable class-based dark mode
         theme: {
           extend: {
             fontFamily: {
@@ -63,6 +64,13 @@
         overflow-x: hidden;
         position: relative;
         min-height: 100vh;
+        transition: background-color 0.5s ease, color 0.5s ease;
+      }
+
+      /* Dark Mode Body Override */
+      .dark body {
+        background-color: #020617; /* Slate-950 base */
+        color: #f1f5f9; /* Slate-100 */
       }
 
       /* --- 1. Tech Grid v3.0 (Enhanced Visibility & Blue Tint) --- */
@@ -81,8 +89,18 @@
         /* Soft mask to fade edges but keep main area distinct */
         mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
         -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
+        transition: background-image 0.5s ease;
       }
       
+      /* Dark Mode Grid: Lighter lines, lower opacity */
+      .dark .bg-tech-grid {
+        background-image: 
+            linear-gradient(rgba(56, 189, 248, 0.15) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(56, 189, 248, 0.15) 1px, transparent 1px);
+        mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+      }
+
       /* Crosshair Overlay */
       .bg-tech-grid::after {
         content: "";
@@ -97,6 +115,11 @@
         background-size: 50px 50px;
         background-position: -1px -1px;
         opacity: 0.6;
+        transition: opacity 0.5s ease;
+      }
+      
+      .dark .bg-tech-grid::after {
+          opacity: 0.3;
       }
 
       /* --- 2. Floating Bokeh Particles (Enhanced) --- */
@@ -108,6 +131,13 @@
         opacity: 0.6;
         mix-blend-mode: multiply; 
         animation: orbFloat 25s infinite ease-in-out alternate;
+        transition: background 0.5s ease, opacity 0.5s ease;
+      }
+      
+      .dark .ambient-orb {
+          mix-blend-mode: screen;
+          opacity: 0.15;
+          filter: blur(100px);
       }
       
       .orb-1 {
@@ -119,6 +149,10 @@
         animation-duration: 35s;
       }
       
+      .dark .orb-1 {
+         background: radial-gradient(circle, #0ea5e9 0%, transparent 70%); /* Sciblue-500 */
+      }
+      
       .orb-2 {
         bottom: -15%;
         right: -5%;
@@ -127,6 +161,10 @@
         background: radial-gradient(circle, #f0f9ff 0%, transparent 70%); /* Very Light Sciblue */
         animation-duration: 40s;
         animation-delay: -10s;
+      }
+      
+      .dark .orb-2 {
+         background: radial-gradient(circle, #0284c7 0%, transparent 70%); /* Sciblue-600 */
       }
 
       @keyframes orbFloat {
@@ -155,6 +193,24 @@
         /* Slower animation: 8s */
         animation: sharpShine 10s linear infinite;
       }
+      
+      /* Dark Mode Metallic Text: Lighter base, brighter shine */
+      .dark .text-metallic {
+        color: #e0f2fe;
+        background: linear-gradient(
+          110deg,
+          #bae6fd 45%,    /* Light Blue */
+          #ffffff 49%,    /* White Highlight */
+          #7dd3fc 50%,    /* Sciblue-300 */
+          #ffffff 51%,    /* White Highlight */
+          #bae6fd 55%     /* Light Blue */
+        );
+        background-size: 250% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0px 2px 0px rgba(0,0,0,0.8)) drop-shadow(0px 0px 15px rgba(14, 165, 233, 0.4));
+      }
 
       @keyframes sharpShine {
         0% { background-position: -150% 0; }
@@ -174,6 +230,13 @@
       }
       ::-webkit-scrollbar-thumb:hover {
         background: #64748b; 
+      }
+      
+      .dark ::-webkit-scrollbar-thumb {
+        background: #475569;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
       }
     </style>
     <!-- REMOVED importmap to fix mobile loading issues -->

@@ -2,10 +2,15 @@ import { Translation, LanguageCode } from '../types';
 
 export const translations: Record<LanguageCode, Translation> = {
   'zh-CN': {
+    brand: {
+      name: "硬球模型",
+      subtitle: "交互仿真"
+    },
     title: "硬球模型气体仿真",
     subtitle: "基于安德森热浴的分子动力学验证平台",
     header: {
       systemOp: "系统正常运行",
+      language: "语言",
     },
     controls: {
       title: "参数设置",
@@ -20,6 +25,7 @@ export const translations: Record<LanguageCode, Translation> = {
       reset: "重置系统",
       resetNote: "参数调整后请务必重置",
       restoreDefaults: "恢复默认",
+      default: "默认",
     },
     messages: {
       resetRequired: "参数已更改或系统需刷新，请先点击【重置系统】",
@@ -98,6 +104,8 @@ export const translations: Record<LanguageCode, Translation> = {
       collapse: "退出全屏",
       openCard: "展开",
       closeCard: "收起",
+      modeLight: "亮色",
+      modeDark: "深色",
     },
     footer: {
       about: "关于项目",
@@ -121,10 +129,15 @@ export const translations: Record<LanguageCode, Translation> = {
     }
   },
   'zh-TW': {
+    brand: {
+      name: "硬球模型",
+      subtitle: "交互仿真"
+    },
     title: "硬球模型氣體模擬",
     subtitle: "基於安德森熱浴的分子動力學驗證平台",
     header: {
       systemOp: "系統正常運行",
+      language: "語言",
     },
     controls: {
       title: "參數設置",
@@ -139,6 +152,7 @@ export const translations: Record<LanguageCode, Translation> = {
       reset: "重置系統",
       resetNote: "參數調整後請務必重置",
       restoreDefaults: "恢復預設",
+      default: "預設",
     },
     messages: {
       resetRequired: "參數已更改或系統需刷新，請先點擊【重置系統】",
@@ -217,6 +231,8 @@ export const translations: Record<LanguageCode, Translation> = {
       collapse: "退出全屏",
       openCard: "展開",
       closeCard: "收起",
+      modeLight: "亮色",
+      modeDark: "深色",
     },
     footer: {
       about: "關於項目",
@@ -240,10 +256,15 @@ export const translations: Record<LanguageCode, Translation> = {
     }
   },
   'en-GB': {
+    brand: {
+      name: "Hard Sphere",
+      subtitle: "Simulation"
+    },
     title: "Hard Sphere Simulation",
     subtitle: "Molecular Dynamics Verification with Andersen Thermostat",
     header: {
       systemOp: "System Operational",
+      language: "Language",
     },
     controls: {
       title: "Parameters",
@@ -258,6 +279,7 @@ export const translations: Record<LanguageCode, Translation> = {
       reset: "Reset System",
       resetNote: "Click Reset after changing parameters",
       restoreDefaults: "Restore Defaults",
+      default: "Default",
     },
     messages: {
       resetRequired: "Parameters changed. Please click [Reset System] first.",
@@ -336,6 +358,8 @@ export const translations: Record<LanguageCode, Translation> = {
       collapse: "Exit Fullscreen",
       openCard: "Expand",
       closeCard: "Collapse",
+      modeLight: "LIGHT",
+      modeDark: "DARK",
     },
     footer: {
       about: "About Project",
@@ -359,10 +383,15 @@ export const translations: Record<LanguageCode, Translation> = {
     }
   },
   'en-US': {
+    brand: {
+      name: "Hard Sphere",
+      subtitle: "Simulation"
+    },
     title: "Hard Sphere Simulation",
     subtitle: "Molecular Dynamics Verification with Andersen Thermostat",
     header: {
       systemOp: "System Operational",
+      language: "Language",
     },
     controls: {
       title: "Parameters",
@@ -377,6 +406,7 @@ export const translations: Record<LanguageCode, Translation> = {
       reset: "Reset System",
       resetNote: "Click Reset after changing parameters",
       restoreDefaults: "Restore Defaults",
+      default: "Default",
     },
     messages: {
       resetRequired: "Parameters changed. Please click [Reset System] first.",
@@ -455,6 +485,8 @@ export const translations: Record<LanguageCode, Translation> = {
       collapse: "Exit Fullscreen",
       openCard: "Expand",
       closeCard: "Collapse",
+      modeLight: "LIGHT",
+      modeDark: "DARK",
     },
     footer: {
       about: "About Project",
