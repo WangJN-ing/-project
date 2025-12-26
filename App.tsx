@@ -297,6 +297,14 @@ function App() {
   // --- Standard Handlers ---
   const handleParamChange = (key: keyof SimulationParams, valueStr: string) => {
       let val = valueStr === '' ? NaN : parseFloat(valueStr);
+      // Basic Sanity Check: Ensure no negative numbers for physics parameters
+      if (!isNaN(val)) {
+         if (key === 'N' || key === 'L' || key === 'r' || key === 'm') {
+             val = Math.max(0.1, val); // Prevent 0 or negative
+         } else {
+             val = Math.max(0, val);
+         }
+      }
       setParams(prev => ({...prev, [key]: val}));
       setNeedsReset(true); 
   };
@@ -333,15 +341,13 @@ function App() {
         showNotification(t.messages.checkInputs, 2000, 'warning');
         return;
     }
-    if (!needsReset && stats.time === 0) {
-        showNotification(t.messages.alreadyLatest, 2000, 'info');
-        return;
-    }
 
     try {
-        setIsRunning(false);
-        setFinalChartData(null);
+        // Critical: Stop old loop first
         if (reqRef.current) cancelAnimationFrame(reqRef.current);
+        setIsRunning(false);
+        
+        setFinalChartData(null);
         
         setActiveParams(params);
         engineRef.current = new PhysicsEngine(params);
@@ -633,17 +639,17 @@ function App() {
                             <div className={`overflow-hidden transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isParamsOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="space-y-2 pb-2 px-0.5">
                                     {[
-                                    { key: 'N', label: t.controls.particles, step: 1 },
-                                    { key: 'r', label: t.controls.radius, step: 0.05 },
-                                    { key: 'L', label: t.controls.boxSize, step: 1 },
-                                    { key: 'equilibriumTime', label: t.controls.equilTime },
-                                    { key: 'statsDuration', label: t.controls.statsDuration },
+                                    { key: 'N', label: t.controls.particles, step: 1, min: 1 },
+                                    { key: 'r', label: t.controls.radius, step: 0.05, min: 0.01 },
+                                    { key: 'L', label: t.controls.boxSize, step: 1, min: 1 },
+                                    { key: 'equilibriumTime', label: t.controls.equilTime, min: 0 },
+                                    { key: 'statsDuration', label: t.controls.statsDuration, min: 0 },
                                     ].map((field) => (
                                         <div key={field.key} className="group relative last:mb-0">
                                             <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase block mb-1">{field.label}</label>
                                             <div className="relative">
                                                 <input 
-                                                type="number" step={field.step}
+                                                type="number" step={field.step} min={field.min}
                                                 value={isNaN(params[field.key as keyof SimulationParams]) ? '' : params[field.key as keyof SimulationParams]}
                                                 disabled={isRunning || isCanvasLocked}
                                                 onChange={(e) => handleParamChange(field.key as keyof SimulationParams, e.target.value)}
